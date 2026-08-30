@@ -1,0 +1,118 @@
+# ---------------------------------------------------------------------------
+# Corpus manifest
+#
+# Every corpus this project touches has an entry here before it is downloaded,
+# read, or referenced in code. The manifest exists to make two distinctions
+# explicit and machine checkable:
+#
+#   1. "publicly accessible" is not "permitted to redistribute"   (DATA.md)
+#   2. "available for use" is not "permitted for training"        (D010)
+#
+# Both are recorded per corpus, not assumed and not decided at use time.
+#
+# This file is intentionally empty. Entries are appended by the milestone that
+# introduces the corpus. Adding an entry is a documentation change and belongs
+# in the same commit as the code that consumes it (RULES.md, Documentation).
+# ---------------------------------------------------------------------------
+
+schema_version: 1
+
+# ---------------------------------------------------------------------------
+# Entry schema
+#
+# Required fields are marked (required). An entry missing a required field is
+# an incomplete entry, not a permissive one: absent means unknown, and unknown
+# is treated as prohibited for both redistribution and training.
+#
+# corpora:
+#   - id: str                       (required) stable slug, referenced from code
+#     name: str                     (required) human name as its publisher gives it
+#     role: enum                    (required) what this corpus is for. One of:
+#                                     retrieval_reference     local pgvector index
+#                                     stance_training         NLI training / eval
+#                                     claim_extraction_eval   extractor validation
+#                                     rhetoric_weak_supervision
+#                                     ood_suite               the frozen OOD set
+#                                     leakage_demonstration_only
+#     purpose: str                  (required) one sentence, why it is here
+#
+#     # --- provenance -------------------------------------------------------
+#     source_url: str               (required) canonical URL of the corpus
+#     access_date: date             (required) ISO 8601, when it was retrieved
+#     snapshot_date: date           (required for anything built or scraped by
+#                                    this project) the date the content reflects
+#     publisher: str                who distributes it
+#
+#     # --- rights -----------------------------------------------------------
+#     licence: str                  (required) SPDX identifier, or free text if
+#                                    the terms are not an SPDX licence
+#     licence_url: str              (required) where those terms were read
+#     attribution: str              (required if the licence requires it) the
+#                                    citation string to reproduce verbatim
+#     redistribution: enum          (required) may this project redistribute it
+#                                    permitted | prohibited | permitted_with_attribution
+#     terms_notes: str              anything in the terms that constrains use,
+#                                    quoted rather than paraphrased
+#
+#     # --- use restrictions -------------------------------------------------
+#     training_use: enum            (required) permitted | prohibited
+#     training_use_reason: str      (required when prohibited) why, with the
+#                                    DECISIONS.md entry that decided it.
+#                                    The ISOT style corpus is prohibited here
+#                                    under D010 and that is not overridable by
+#                                    a task instruction.
+#     evaluation_use: enum          (required) permitted | prohibited
+#
+#     # --- storage ----------------------------------------------------------
+#     checked_in: bool              (required) false for everything but tiny
+#                                    annotation files. See .gitignore.
+#     retrieval:                    (required when checked_in is false)
+#       method: enum                download_script | api | manual
+#       script: str                 repo relative path, e.g. pipeline/data/fetch_fever.py
+#       notes: str                  credentials required, rate limits observed
+#     storage:
+#       location: str               bucket or path, not a personal machine
+#       region: str                 (required when personal_data.contains) EU region
+#       encrypted_at_rest: bool     (required when personal_data.contains) must be true
+#
+#     # --- integrity --------------------------------------------------------
+#     record_count: int             (required once frozen)
+#     sha256: str                   (required once frozen) over the archive or
+#                                    over a sorted per file digest listing
+#     frozen: bool                  (required) true once the content may not change
+#     frozen_at: datetime           (required when frozen)
+#
+#     # --- splits -----------------------------------------------------------
+#     # DATA.md: grouped by publishing domain, never random. Temporal as a
+#     # second axis where dates exist. Three way, with the frozen holdout
+#     # inspected exactly twice in the project (D009).
+#     splits:
+#       method: enum                grouped_by_domain | grouped_by_domain_and_temporal | none
+#       group_key: str              the field the grouping is on
+#       temporal_boundary: date     train before, evaluate after
+#       train: int
+#       dev: int
+#       frozen_holdout: int
+#       holdout_inspections: list   ISO dates. Length must never exceed 2 (D009).
+#
+#     # --- personal data ----------------------------------------------------
+#     # News text names individuals, which puts this project in scope as a
+#     # controller (DATA.md, SECURITY.md control 6).
+#     personal_data:
+#       contains: bool              (required)
+#       lawful_basis: str           (required when contains) e.g. legitimate interest, research
+#       balancing_test: str         (required when contains) path to the written test
+#       retention: str              (required when contains) and what happens at expiry
+#
+#     # --- normalisation ----------------------------------------------------
+#     # Recorded because identical processing across strata is what stops this
+#     # project reproducing the leakage it exists to document.
+#     normalisation:
+#       extraction_pipeline: str    version or git SHA of the extractor used
+#       identical_across_strata: bool  (required for ood_suite) must be true
+#       publisher_markers_stripped: bool
+#
+#     notes: str
+# ---------------------------------------------------------------------------
+
+corpora: []

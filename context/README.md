@@ -1,0 +1,41 @@
+# Provenance
+
+Working name. Rename freely. "Provenance" describes what the system actually does: it tells you where a claim came from and what other sources say about it. It does not tell you whether the claim is true.
+
+## What these files are
+
+This is the context pack for an AI first build workflow. Every file here is written to be read by a coding agent at the start of a session, not by a human at the end of the project. The agent reads BRIEF, RULES, and ARCHITECTURE on every session start. It reads the others when the task touches them.
+
+## Read order
+
+| File | Read when | Purpose |
+| --- | --- | --- |
+| BRIEF.md | Always | What is being built, for whom, and the boundaries |
+| RULES.md | Always | How code gets written, reviewed, and committed |
+| ARCHITECTURE.md | Always | Component map, data flow, service boundaries |
+| DATA.md | Any dataset or training task | Sources, licences, leakage analysis, splits |
+| EVALUATION.md | Any model or metric task | Eval protocol, OOD suite, acceptance thresholds |
+| SECURITY.md | Any task touching network, input, storage, or models | Threat model and required controls |
+| API.md | Any endpoint or client task | Contracts, error shapes, versioning |
+| DECISIONS.md | When a choice is being reversed or questioned | Decision log with reasoning and status |
+| ROADMAP.md | Session planning | Milestones and definitions of done |
+
+## Non negotiables
+
+Three rules override everything else in this pack. They exist because breaking any of them turns the project from a defensible piece of work into a demo that collapses under a single question.
+
+1. **The system never outputs a truth verdict.** No "fake" label, no truth score, no percentage of veracity. The output is evidence and provenance. This is a product decision, an ethical decision, and a technical decision at once, and it is not up for renegotiation mid build.
+2. **Evaluation is written before the model.** The out of distribution suite in EVALUATION.md exists before the first training run. A number produced without a matching OOD number is not reportable.
+3. **Every fetched byte is hostile.** Article text, social posts, and model checkpoints are all attacker controlled inputs. SECURITY.md governs how they are handled and there are no convenience exceptions.
+
+## Session start prompt
+
+Paste this at the top of a fresh agent session.
+
+```
+Read context/BRIEF.md, context/RULES.md, and context/ARCHITECTURE.md in full.
+Then read the context file matching today's task per the table in context/README.md.
+Confirm you have read them by stating the current milestone from ROADMAP.md
+and the three non negotiables from README.md.
+Do not write code until I give you a task.
+```

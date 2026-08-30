@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets. gitleaks is the backstop, not the primary control (SECURITY.md c.6).
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Corpora. DATA.md: corpora that cannot be redistributed are referenced by
+# download script, never checked in. MANIFEST.yaml is the exception and is
+# tracked, because the manifest is the record of what was not checked in.
+data/*
+!data/MANIFEST.yaml
+!data/README.md
+
+# Model artefacts live in object storage, never git (RULES.md).
+*.safetensors
+*.onnx
+*.bin
+*.pt
+*.ckpt
+
+# Agent tooling runtime state. Daemon pids, logs and neural stats are
+# machine local and change on every run; they are not project configuration.
+.claude-flow/
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

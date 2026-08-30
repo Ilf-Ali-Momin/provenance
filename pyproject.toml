@@ -1,0 +1,116 @@
+[project]
+name = "provenance"
+version = "0.0.0"
+description = "Evidence surfacing for claims. Provenance, not verdicts."
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+# Tooling only at M0. Runtime dependencies arrive with the components that need
+# them, per milestone. Pinning with hashes happens in the lockfile (RULES.md,
+# "Model artefacts" / SECURITY.md control 3), not here.
+dev = [
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "pytest>=8.3",
+  "pip-audit>=2.7",
+  "pre-commit>=3.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pipeline", "eval"]
+
+# ---------------------------------------------------------------------------
+# Ruff
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["pipeline", "eval", "tests"]
+
+[tool.ruff.lint]
+# Selection is chosen against RULES.md and SECURITY.md rather than by taste:
+#   ANN  every function signature is annotated
+#   T20  no print; structlog only
+#   S    flake8-bandit, standing in for the static half of SECURITY.md
+#   B    flake8-bugbear, catches except/pass and mutable default classes of bug
+#   PTH  pathlib over os.path, so path handling is uniform at the fetch boundary
+select = [
+  "E", "W",      # pycodestyle
+  "F",           # pyflakes
+  "I",           # import order
+  "N",           # naming
+  "UP",          # pyupgrade
+  "ANN",         # annotations
+  "B",           # bugbear
+  "S",           # bandit
+  "T20",         # no print
+  "SIM",         # simplify
+  "RET",         # return consistency
+  "PTH",         # pathlib
+  "RUF",
+]
+ignore = [
+  "ANN401",  # typing.Any is sometimes the honest annotation at a boundary
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+  "S101",    # assert is the point
+  "S105", "S106",  # hardcoded test credentials in fixtures
+  "ANN201",  # test functions need no return annotation
+]
+
+[tool.ruff.lint.flake8-bandit]
+# Adversarial fixtures legitimately contain hostile-looking constants.
+check-typed-exception = true
+
+[tool.ruff.format]
+docstring-code-format = true
+
+# ---------------------------------------------------------------------------
+# Mypy
+# ---------------------------------------------------------------------------
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+# RULES.md mandates strict on app/ and pipeline/. eval/ is added here because
+# evaluation code ships as a deliverable (see context/DECISIONS.md D011).
+# app/ is added at M1 when the Flask skeleton exists.
+files = ["pipeline", "eval"]
+warn_unreachable = true
+disallow_any_unimported = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+# Notebooks are exempt per RULES.md, and nothing in a notebook ships.
+module = "notebooks.*"
+ignore_errors = true
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
+  # Model behaviour tests are slow and gate releases, not commits (RULES.md).
+  "-m", "not model",
+]
+markers = [
+  "adversarial: hostile-input suites from SECURITY.md. First class, gates releases.",
+  "model: loads a checkpoint or calls a model service. Slow. Excluded by default.",
+  "contract: endpoint behaviour against the schemas in context/API.md.",
+]
+xfail_strict = true
+filterwarnings = ["error"]

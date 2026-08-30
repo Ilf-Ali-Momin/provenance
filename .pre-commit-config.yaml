@@ -1,0 +1,18 @@
+# Pre-commit is the local half of the CI gate described in ROADMAP.md M1.
+# M0 installs ruff and gitleaks only; mypy, pytest, pip-audit and the unpinned
+# model reference check join CI at M1.
+default_language_version:
+  python: python3.12
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.5
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
