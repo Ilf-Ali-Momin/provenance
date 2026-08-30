@@ -1,0 +1,18 @@
+{
+  "baseline": {
+    "accuracy": 0.992,
+    "seconds": 452.1
+  },
+  "first_sentence_removed": {
+    "accuracy": 0.971,
+    "seconds": 503.7
+  },
+  "structure_only": {
+    "accuracy": 0.835,
+    "seconds": 546.3
+  },
+  "length_matched": {
+    "accuracy": 0.97,
+    "seconds": 497.9
+  }
+}

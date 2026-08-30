@@ -1,7 +1,7 @@
 # Leakage analysis
 
-*Status: linear probe complete, transformer reproduction in progress. Every
-number below is measured. No number in this document is estimated, rounded
+*Status: both reproductions complete; ablation 4 not run, for the reason given
+below. Every number in this document is measured. None is estimated, rounded
 from memory, or carried over from published work.*
 
 ## The claim being tested
@@ -48,22 +48,41 @@ document length survive, every content word is destroyed. **Length matched**:
 both classes resampled to a common length distribution across 40 quantile bins,
 removing length as a signal without removing a single word.
 
+The same four conditions were then run against a fine tuned transformer, which
+is what EVALUATION.md actually specifies: `distilbert-base-uncased`, one epoch,
+batch 16, learning rate 5e-5, defaults throughout, since the point is to
+reproduce what the common project reports rather than to tune it. That run is
+**reduced in scale** — 6,000 training and 2,000 held out documents truncated to
+128 tokens, against the linear probe's 36,000 and 8,267. The host was under
+heavy external load that starved a full size run to roughly 36 seconds per
+step. The reduction is stated here so the transformer column is never read as a
+full scale reproduction. The two columns are not comparable in absolute terms;
+what matters is whether they agree in shape.
+
 ## Results
 
-| Condition | Accuracy | Δ vs baseline | Information removed |
+| Condition | Linear, full | DistilBERT, reduced | Information removed |
 | --- | --- | --- | --- |
-| Baseline | **0.9849** | — | none |
-| First sentence removed | 0.9756 | −0.9 pp | leading sentence (dateline already absent) |
-| Length matched | 0.9824 | −0.3 pp | document length |
-| Structure only | **0.8184** | −16.7 pp | **every content word** |
+| Baseline | **0.9849** | **0.9920** | none |
+| First sentence removed | 0.9756 (−0.9 pp) | 0.9710 (−2.1 pp) | leading sentence (dateline already absent) |
+| Length matched | 0.9824 (−0.3 pp) | 0.9700 (−2.2 pp) | document length |
+| Structure only | **0.8184 (−16.7 pp)** | **0.8350 (−15.7 pp)** | **every content word** |
+| Cross domain transfer | not run | not run | — (see below) |
 
 ## Reading the numbers
 
-The decisive row is the last one. With every content word destroyed — no nouns,
-no verbs, no names, no topic, nothing a human could read — accuracy is **81.8%**
-against a 50% chance baseline. Punctuation habits, capitalisation patterns and
-document length alone carry roughly two thirds of the distance from chance to
-the headline figure.
+The decisive row is structure only. With every content word destroyed — no
+nouns, no verbs, no names, no topic, nothing a human could read — accuracy is
+**81.8%** for the linear probe and **83.5%** for the transformer, against a 50%
+chance baseline. Punctuation habits, capitalisation patterns and document
+length alone carry roughly two thirds of the distance from chance to the
+headline figure.
+
+That two unrelated model families land within 1.7 points of each other on that
+condition matters more than either number. A single result could be an artefact
+of the probe; TF-IDF logistic regression and a fine tuned transformer agreeing
+this closely, at different corpus scales, indicates the signal is a property of
+the corpus rather than of the classifier.
 
 No account of this result attributes it to veracity detection. A document's
 comma placement does not become different when its content becomes false. What
@@ -71,11 +90,12 @@ the model is separating is two publishing pipelines: one house style guide and
 one HTML scrape, distinguishable by their formatting residue.
 
 The other two ablations are individually undramatic and jointly informative.
-Length alone is worth 0.3 points, so the length confound DATA.md anticipates is
-real but small. First sentence removal costs 0.9 points, but against
-pre-stripped text this measures only what a *second* sentence removal would
-cost — it is a lower bound and it should not be read as evidence that the
-dateline was unimportant in the original corpus.
+Length matching costs 0.3 points on the linear probe and 2.2 on the
+transformer, so the length confound DATA.md anticipates is real but minor in
+both. First sentence removal costs 0.9 and 2.1 points respectively — but
+against pre-stripped text that measures what a *second* sentence removal would
+cost, so it is a lower bound and not evidence that the dateline was
+unimportant in the original corpus.
 
 That the surviving signal is distributed rather than concentrated in one
 sentence is the more uncomfortable finding. A single leaky feature could be
@@ -99,16 +119,23 @@ this document exists to criticise, so the row is absent rather than estimated.
 
 ## Limitations
 
-A linear model on TF-IDF is not the transformer EVALUATION.md specifies; the
-transformer reproduction is running and its numbers will be added to the table
-above rather than replacing it. The mirror's provenance is weaker than a first
-party download and its licence is unstated. Ablation 1 is a lower bound for the
-reason given. Single seed throughout; no confidence intervals are claimed.
+The transformer column is a reduced scale run for the reason given in the
+method, so its absolute values should not be quoted as a full corpus
+reproduction. The mirror's provenance is weaker than a first party download and
+its licence is unstated. Ablation 1 is a lower bound, because the mirrors
+arrive pre-stripped. Single seed, one epoch, no hyperparameter search, no
+confidence intervals — deliberately the defaults the criticised approach uses,
+which means differences between adjacent rows are not established as
+significant. Only the structure only gap is too large for seed variance to
+explain.
 
 ## Reproduction
 
 ```bash
 PYTHONPATH=. .venv/bin/python eval/leakage/run_linear.py
+PYTHONPATH=. .venv/bin/python eval/leakage/run_transformer.py
 ```
 
-Results are written to `eval/leakage/results/linear.json`.
+Results are written to `eval/leakage/results/linear.json` and
+`transformer.json`. The transformer runner skips any condition already present
+in its results file, so an interrupted run resumes rather than retraining.
