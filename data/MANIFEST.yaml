@@ -115,4 +115,107 @@ schema_version: 1
 #     notes: str
 # ---------------------------------------------------------------------------
 
-corpora: []
+corpora:
+  - id: isot_style_kaggle_mirror
+    name: ISOT style fake news corpus (HuggingFace mirror)
+    role: leakage_demonstration_only
+    purpose: >-
+      Reproduce and document the leakage failure described in DATA.md and
+      EVALUATION.md section 2. This corpus exists in the project to be
+      criticised, not to be learned from.
+
+    # --- provenance ---------------------------------------------------------
+    source_url: https://huggingface.co/datasets/ErfanMoosaviMonazzah/fake-news-detection-dataset-English
+    access_date: 2026-08-30
+    snapshot_date: 2026-08-30
+    publisher: >-
+      Third party mirror on the HuggingFace hub. NOT the original ISOT
+      distribution from the University of Victoria, and not the Kaggle
+      upload. Provenance is therefore weaker than a first party download and
+      every number derived from it carries that caveat.
+
+    # --- rights -------------------------------------------------------------
+    licence: not stated on the mirror
+    licence_url: https://huggingface.co/datasets/ErfanMoosaviMonazzah/fake-news-detection-dataset-English
+    attribution: >-
+      Ahmed H, Traore I, Saad S. Detecting opinion spam and fake news using
+      text classification. Security and Privacy, 2017. Cite the original
+      authors, not the mirror.
+    redistribution: prohibited
+    terms_notes: >-
+      The mirror states no licence. Under the rule at the head of this file,
+      unknown is treated as prohibited for both redistribution and training.
+
+    # --- use restrictions ---------------------------------------------------
+    training_use: prohibited
+    training_use_reason: >-
+      DECISIONS.md D010, accepted and non negotiable. The leakage is in the
+      label structure itself, so augmentation, pretraining and auxiliary task
+      use are all prohibited, not only direct supervision. The models trained
+      in eval/leakage/ are throwaway probes for the ablation and are never
+      loaded by any serving path.
+    evaluation_use: permitted
+
+    # --- storage ------------------------------------------------------------
+    checked_in: false
+    retrieval:
+      method: api
+      script: eval/leakage/ablations.py
+      notes: >-
+        Fetched through the datasets library at run time into the local HF
+        cache. No copy is committed to the repository.
+    storage:
+      location: local HuggingFace datasets cache, not in the repository
+
+    # --- integrity ----------------------------------------------------------
+    record_count: 44267
+    class_counts:
+      wire_service_true: 21416
+      heterogeneous_false: 22851
+    frozen: false
+
+    # --- splits -------------------------------------------------------------
+    splits:
+      method: none
+      train: 36000
+      dev: 0
+      frozen_holdout: 8267
+      holdout_inspections: []
+      notes: >-
+        Random splits, deliberately. DATA.md mandates grouped splits by domain
+        for anything this project builds on, but section 2 of EVALUATION.md
+        requires reproducing the standard approach exactly as commonly done,
+        and the standard approach splits randomly. The random split is part of
+        what is being criticised. The mirror ships train, validation and test;
+        train and validation are concatenated here and its test split is used
+        as the held out set.
+
+    # --- personal data ------------------------------------------------------
+    personal_data:
+      contains: true
+      lawful_basis: legitimate interest, research
+      balancing_test: not yet written
+      retention: >-
+        Held only in the local HF cache for the duration of the ablation. No
+        article text is committed, and none reaches any project database.
+
+    # --- normalisation ------------------------------------------------------
+    normalisation:
+      extraction_pipeline: upstream, not performed by this project
+      identical_across_strata: false
+      publisher_markers_stripped: partial
+      notes: >-
+        MEASURED, not assumed. Only 0.3 percent of the wire service half
+        retains a "(Reuters)" marker in its first 200 characters, against a
+        near universal rate in the original ISOT distribution. The mirror has
+        been pre-stripped of the dateline prefix. This materially weakens
+        ablation 1, whose stated target is the dateline, and the ablation is
+        reported with that limitation stated rather than silently reinterpreted.
+
+    notes: >-
+      Every accessible mirror checked (this one, AlexanderHolmes0/true-fake-news,
+      Pulk17/Fake-News-Detection-dataset) is dateline stripped at the same
+      0.3 percent rate. Chosen over AlexanderHolmes0, which matches the
+      canonical class counts exactly, because this mirror retains the subject
+      and date columns that expose further leakage channels.
+

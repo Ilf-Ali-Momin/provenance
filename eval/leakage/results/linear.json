@@ -1,0 +1,26 @@
+{
+  "baseline": {
+    "accuracy": 0.9849,
+    "n_train": 36000,
+    "n_test": 8267,
+    "seconds": 1055.4
+  },
+  "first_sentence_removed": {
+    "accuracy": 0.9756,
+    "n_train": 36000,
+    "n_test": 8267,
+    "seconds": 31.3
+  },
+  "structure_only": {
+    "accuracy": 0.8184,
+    "n_train": 36000,
+    "n_test": 8267,
+    "seconds": 9139.1
+  },
+  "length_matched": {
+    "accuracy": 0.9824,
+    "n_train": 26632,
+    "n_test": 6140,
+    "seconds": 336.4
+  }
+}

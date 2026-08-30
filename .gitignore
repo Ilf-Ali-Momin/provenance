@@ -35,6 +35,10 @@ data/*
 *.pt
 *.ckpt
 
+# Run logs. The measured results (results/*.json) are committed; the raw
+# logs are noisy HTTP chatter and are not.
+eval/leakage/results/*.log
+
 # Agent tooling runtime state. Daemon pids, logs and neural stats are
 # machine local and change on every run; they are not project configuration.
 .claude-flow/

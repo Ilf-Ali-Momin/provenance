@@ -93,6 +93,13 @@ show_error_codes = true
 module = "notebooks.*"
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+# These ship no stubs and no py.typed marker. Declaring them is not a
+# relaxation of strict mode: our own code stays fully checked, and values
+# crossing this boundary are annotated explicitly at the call site.
+module = ["sklearn.*", "datasets.*", "transformers.*"]
+ignore_missing_imports = true
+
 # ---------------------------------------------------------------------------
 # Pytest
 # ---------------------------------------------------------------------------
