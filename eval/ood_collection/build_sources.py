@@ -36,15 +36,32 @@ OUT: Final = Path("eval/ood_collection/sources.yaml")
 # service is a wire service. Everything else is left to MBFC, because it is an
 # opinion about a named organisation and D007 forbids this project holding one.
 CANDIDATES: Final[tuple[tuple[str, str, str | None], ...]] = (
+    # --- wire ---------------------------------------------------------------
     ("reuters.com", "reuters", "wire"),
     ("apnews.com", "associated-press", "wire"),
-    ("afp.com", "agence-france-presse-afp", "wire"),
+    ("afp.com", "afp", "wire"),
+    ("upi.com", "united-press-international", "wire"),
+    # --- aggregator ---------------------------------------------------------
     ("news.yahoo.com", "yahoo-news", "aggregator"),
-    ("msn.com", "msn-news", "aggregator"),
+    ("msn.com", "msn", "aggregator"),
+    ("news.google.com", "google-news", "aggregator"),
+    ("realclearpolitics.com", "real-clear-politics", "aggregator"),
+    ("drudgereport.com", "drudge-report", "aggregator"),
+    # --- regional -----------------------------------------------------------
     ("chicagotribune.com", "chicago-tribune", "regional"),
-    ("dallasnews.com", "the-dallas-morning-news", "regional"),
-    ("seattletimes.com", "the-seattle-times", "regional"),
+    ("dallasnews.com", "dallas-morning-news", "regional"),
+    ("seattletimes.com", "seattle-times", "regional"),
+    ("bostonglobe.com", "boston-globe", "regional"),
+    ("sfchronicle.com", "san-francisco-chronicle", "regional"),
+    ("denverpost.com", "denver-post", "regional"),
+    ("miamiherald.com", "miami-herald", "regional"),
     ("manchestereveningnews.co.uk", "manchester-evening-news", "regional"),
+    ("liverpoolecho.co.uk", "liverpool-echo", "regional"),
+    # --- MBFC decides the rest ---------------------------------------------
+    # Selected for depth in each lean bucket, not for a balanced pool. Sampling
+    # draws equal numbers per bucket (D017), so what the pool needs is enough
+    # domains on each side to make that possible, and the achieved counts are
+    # reported rather than assumed.
     ("bbc.com", "bbc", None),
     ("theguardian.com", "the-guardian", None),
     ("nytimes.com", "new-york-times", None),
@@ -62,10 +79,29 @@ CANDIDATES: Final[tuple[tuple[str, str, str | None], ...]] = (
     ("forbes.com", "forbes", None),
     ("statnews.com", "stat-news", None),
     ("sciencedaily.com", "science-daily", None),
+    # Added to deepen `national`: four domains cannot support a grouped split
+    # by domain across train, dev and frozen holdout.
+    ("csmonitor.com", "christian-science-monitor", None),
+    ("c-span.org", "c-span", None),
+    ("nature.com", "nature", None),
+    ("newscientist.com", "new-scientist", None),
+    ("axios.com", "axios", None),
+    ("pbs.org", "pbs-news-hour", None),
+    ("aljazeera.com", "al-jazeera", None),
+    ("marketwatch.com", "marketwatch", None),
+    ("theatlantic.com", "the-atlantic", None),
+    ("telegraph.co.uk", "telegraph", None),
     ("foxnews.com", "fox-news", None),
     ("nationalreview.com", "national-review", None),
-    ("reason.com", "reason-magazine", None),
+    ("reason.com", "reason", None),
+    ("washingtonexaminer.com", "washington-examiner", None),
+    ("thedispatch.com", "the-dispatch", None),
+    ("nypost.com", "new-york-post", None),
+    ("spectator.co.uk", "the-spectator", None),
+    ("nationalpost.com", "national-post", None),
     ("dailywire.com", "the-daily-wire", None),
+    ("thefederalist.com", "the-federalist", None),
+    ("dailymail.co.uk", "daily-mail", None),
     ("newsmax.com", "newsmax", None),
     ("breitbart.com", "breitbart", None),
     ("oann.com", "one-america-news-network", None),
@@ -73,8 +109,10 @@ CANDIDATES: Final[tuple[tuple[str, str, str | None], ...]] = (
     ("motherjones.com", "mother-jones", None),
     ("thedailybeast.com", "daily-beast", None),
     ("theintercept.com", "the-intercept", None),
-    ("jacobin.com", "jacobin-magazine", None),
+    ("jacobin.com", "jacobin", None),
     ("dailykos.com", "daily-kos", None),
+    ("vox.com", "vox", None),
+    ("slate.com", "slate", None),
     ("infowars.com", "infowars", None),
     ("naturalnews.com", "natural-news", None),
 )
