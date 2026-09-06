@@ -13,6 +13,9 @@ dependencies = [
   # pydantic-settings for configuration, so no timeout or cap is a literal.
   "pydantic>=2.8",
   "pydantic-settings>=2.4",
+  # Postgres driver. Implied by ARCHITECTURE.md's "Postgres 16 with pgvector";
+  # the binary build avoids a libpq toolchain on developer machines.
+  "psycopg[binary]>=3.2",
 ]
 
 [dependency-groups]
@@ -122,12 +125,13 @@ addopts = [
   "--strict-markers",
   "--strict-config",
   # Model behaviour tests are slow and gate releases, not commits (RULES.md).
-  "-m", "not model",
+  "-m", "not model and not integration",
 ]
 markers = [
   "adversarial: hostile-input suites from SECURITY.md. First class, gates releases.",
   "model: loads a checkpoint or calls a model service. Slow. Excluded by default.",
   "contract: endpoint behaviour against the schemas in context/API.md.",
+  "integration: needs the docker compose stack up. Excluded by default; never runs in CI.",
 ]
 xfail_strict = true
 filterwarnings = ["error"]
