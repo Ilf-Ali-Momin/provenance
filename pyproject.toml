@@ -32,6 +32,9 @@ dev = [
   "pytest>=8.3",
   "pip-audit>=2.7",
   "pre-commit>=3.8",
+  # PyYAML arrives transitively via trafilatura; the stubs are needed because
+  # mypy runs strict over eval/, which reads and writes the manifest.
+  "types-PyYAML>=6.0",
 ]
 
 [build-system]

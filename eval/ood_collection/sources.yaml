@@ -1,0 +1,507 @@
+# Candidate publishers for the OOD suite.
+#
+# `stratum` and `lean` are DERIVED from Media Bias/Fact Check labels by
+# the rules in eval/ood_collection/mbfc.py. The labels themselves are
+# MBFC's, recorded with the URL they came from and the date read. This
+# project does not rate publishers (D007, SECURITY.md control 8).
+#
+# `assigned_category` is the one field this project sets itself, and only
+# for factual categories: a wire service is a wire service.
+#
+# lean is kept as its own axis and never folded into stratum. See D016.
+#
+# Generated 2026-09-06 over 41 candidates.
+
+publishers:
+- domain: reuters.com
+  stratum: wire
+  lean: center
+  assigned_category: wire
+  mbfc:
+    slug: reuters
+    bias: LEAST BIASED
+    factual_reporting: VERY HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/reuters/
+    observed_at: '2026-09-06'
+    found: true
+- domain: apnews.com
+  stratum: wire
+  lean: lean_left
+  assigned_category: wire
+  mbfc:
+    slug: associated-press
+    bias: LEFT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/associated-press/
+    observed_at: '2026-09-06'
+    found: true
+- domain: afp.com
+  stratum: wire
+  lean: null
+  assigned_category: wire
+  mbfc:
+    slug: agence-france-presse-afp
+    bias: null
+    factual_reporting: null
+    credibility: null
+    source_url: https://mediabiasfactcheck.com/agence-france-presse-afp/
+    observed_at: '2026-09-06'
+    found: false
+- domain: news.yahoo.com
+  stratum: aggregator
+  lean: lean_left
+  assigned_category: aggregator
+  mbfc:
+    slug: yahoo-news
+    bias: LEFT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/yahoo-news/
+    observed_at: '2026-09-06'
+    found: true
+- domain: msn.com
+  stratum: aggregator
+  lean: null
+  assigned_category: aggregator
+  mbfc:
+    slug: msn-news
+    bias: null
+    factual_reporting: null
+    credibility: null
+    source_url: https://mediabiasfactcheck.com/msn-news/
+    observed_at: '2026-09-06'
+    found: false
+- domain: chicagotribune.com
+  stratum: regional
+  lean: lean_right
+  assigned_category: regional
+  mbfc:
+    slug: chicago-tribune
+    bias: RIGHT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/chicago-tribune/
+    observed_at: '2026-09-06'
+    found: true
+- domain: dallasnews.com
+  stratum: regional
+  lean: null
+  assigned_category: regional
+  mbfc:
+    slug: the-dallas-morning-news
+    bias: null
+    factual_reporting: null
+    credibility: null
+    source_url: https://mediabiasfactcheck.com/the-dallas-morning-news/
+    observed_at: '2026-09-06'
+    found: false
+- domain: seattletimes.com
+  stratum: regional
+  lean: null
+  assigned_category: regional
+  mbfc:
+    slug: the-seattle-times
+    bias: null
+    factual_reporting: null
+    credibility: null
+    source_url: https://mediabiasfactcheck.com/the-seattle-times/
+    observed_at: '2026-09-06'
+    found: false
+- domain: manchestereveningnews.co.uk
+  stratum: regional
+  lean: lean_left
+  assigned_category: regional
+  mbfc:
+    slug: manchester-evening-news
+    bias: LEFT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/manchester-evening-news/
+    observed_at: '2026-09-06'
+    found: true
+- domain: bbc.com
+  stratum: national
+  lean: center
+  assigned_category: null
+  mbfc:
+    slug: bbc
+    bias: LEAST BIASED
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/bbc/
+    observed_at: '2026-09-06'
+    found: true
+- domain: theguardian.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: the-guardian
+    bias: LEFT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/the-guardian/
+    observed_at: '2026-09-06'
+    found: true
+- domain: nytimes.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: new-york-times
+    bias: LEFT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/new-york-times/
+    observed_at: '2026-09-06'
+    found: true
+- domain: wsj.com
+  stratum: partisan
+  lean: lean_right
+  assigned_category: null
+  mbfc:
+    slug: wall-street-journal
+    bias: RIGHT-CENTER
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/wall-street-journal/
+    observed_at: '2026-09-06'
+    found: true
+- domain: washingtonpost.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: washington-post
+    bias: LEFT-CENTER
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/washington-post/
+    observed_at: '2026-09-06'
+    found: true
+- domain: npr.org
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: npr
+    bias: LEFT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/npr/
+    observed_at: '2026-09-06'
+    found: true
+- domain: cnn.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: cnn
+    bias: LEFT-CENTER
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/cnn/
+    observed_at: '2026-09-06'
+    found: true
+- domain: nbcnews.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: nbc-news
+    bias: LEFT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/nbc-news/
+    observed_at: '2026-09-06'
+    found: true
+- domain: cbsnews.com
+  stratum: partisan
+  lean: lean_right
+  assigned_category: null
+  mbfc:
+    slug: cbs-news
+    bias: RIGHT-CENTER
+    factual_reporting: MOSTLY FACTUAL
+    credibility: MEDIUM CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/cbs-news/
+    observed_at: '2026-09-06'
+    found: true
+- domain: usatoday.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: usa-today
+    bias: LEFT-CENTER
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/usa-today/
+    observed_at: '2026-09-06'
+    found: true
+- domain: thehill.com
+  stratum: national
+  lean: center
+  assigned_category: null
+  mbfc:
+    slug: the-hill
+    bias: LEAST BIASED
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/the-hill/
+    observed_at: '2026-09-06'
+    found: true
+- domain: politico.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: politico
+    bias: LEFT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/politico/
+    observed_at: '2026-09-06'
+    found: true
+- domain: bloomberg.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: bloomberg
+    bias: LEFT-CENTER
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/bloomberg/
+    observed_at: '2026-09-06'
+    found: true
+- domain: cnbc.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: cnbc
+    bias: LEFT-CENTER
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/cnbc/
+    observed_at: '2026-09-06'
+    found: true
+- domain: forbes.com
+  stratum: national
+  lean: center
+  assigned_category: null
+  mbfc:
+    slug: forbes
+    bias: LEAST BIASED
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/forbes/
+    observed_at: '2026-09-06'
+    found: true
+- domain: statnews.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: stat-news
+    bias: LEFT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/stat-news/
+    observed_at: '2026-09-06'
+    found: true
+- domain: sciencedaily.com
+  stratum: national
+  lean: center
+  assigned_category: null
+  mbfc:
+    slug: science-daily
+    bias: PRO-SCIENCE
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/science-daily/
+    observed_at: '2026-09-06'
+    found: true
+- domain: foxnews.com
+  stratum: low_quality
+  lean: right
+  assigned_category: null
+  mbfc:
+    slug: fox-news
+    bias: RIGHT
+    factual_reporting: LOW
+    credibility: LOW CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/fox-news/
+    observed_at: '2026-09-06'
+    found: true
+- domain: nationalreview.com
+  stratum: partisan
+  lean: right
+  assigned_category: null
+  mbfc:
+    slug: national-review
+    bias: RIGHT
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/national-review/
+    observed_at: '2026-09-06'
+    found: true
+- domain: reason.com
+  stratum: null
+  lean: null
+  assigned_category: null
+  mbfc:
+    slug: reason-magazine
+    bias: null
+    factual_reporting: null
+    credibility: null
+    source_url: https://mediabiasfactcheck.com/reason-magazine/
+    observed_at: '2026-09-06'
+    found: false
+- domain: dailywire.com
+  stratum: partisan
+  lean: right
+  assigned_category: null
+  mbfc:
+    slug: the-daily-wire
+    bias: RIGHT
+    factual_reporting: MIXED
+    credibility: MEDIUM CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/the-daily-wire/
+    observed_at: '2026-09-06'
+    found: true
+- domain: newsmax.com
+  stratum: low_quality
+  lean: right
+  assigned_category: null
+  mbfc:
+    slug: newsmax
+    bias: RIGHT
+    factual_reporting: LOW
+    credibility: LOW CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/newsmax/
+    observed_at: '2026-09-06'
+    found: true
+- domain: breitbart.com
+  stratum: low_quality
+  lean: right
+  assigned_category: null
+  mbfc:
+    slug: breitbart
+    bias: RIGHT
+    factual_reporting: MIXED
+    credibility: LOW CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/breitbart/
+    observed_at: '2026-09-06'
+    found: true
+- domain: oann.com
+  stratum: low_quality
+  lean: right
+  assigned_category: null
+  mbfc:
+    slug: one-america-news-network
+    bias: FAR RIGHT
+    factual_reporting: LOW
+    credibility: LOW CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/one-america-news-network/
+    observed_at: '2026-09-06'
+    found: true
+- domain: thegatewaypundit.com
+  stratum: low_quality
+  lean: right
+  assigned_category: null
+  mbfc:
+    slug: the-gateway-pundit
+    bias: EXTREME RIGHT
+    factual_reporting: VERY LOW
+    credibility: LOW CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/the-gateway-pundit/
+    observed_at: '2026-09-06'
+    found: true
+- domain: motherjones.com
+  stratum: partisan
+  lean: lean_left
+  assigned_category: null
+  mbfc:
+    slug: mother-jones
+    bias: LEFT-CENTER
+    factual_reporting: HIGH
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/mother-jones/
+    observed_at: '2026-09-06'
+    found: true
+- domain: thedailybeast.com
+  stratum: partisan
+  lean: left
+  assigned_category: null
+  mbfc:
+    slug: daily-beast
+    bias: LEFT
+    factual_reporting: MIXED
+    credibility: MEDIUM
+    source_url: https://mediabiasfactcheck.com/daily-beast/
+    observed_at: '2026-09-06'
+    found: true
+- domain: theintercept.com
+  stratum: partisan
+  lean: left
+  assigned_category: null
+  mbfc:
+    slug: the-intercept
+    bias: LEFT
+    factual_reporting: MOSTLY FACTUAL
+    credibility: HIGH CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/the-intercept/
+    observed_at: '2026-09-06'
+    found: true
+- domain: jacobin.com
+  stratum: null
+  lean: null
+  assigned_category: null
+  mbfc:
+    slug: jacobin-magazine
+    bias: null
+    factual_reporting: null
+    credibility: null
+    source_url: https://mediabiasfactcheck.com/jacobin-magazine/
+    observed_at: '2026-09-06'
+    found: false
+- domain: dailykos.com
+  stratum: partisan
+  lean: left
+  assigned_category: null
+  mbfc:
+    slug: daily-kos
+    bias: LEFT
+    factual_reporting: MIXED
+    credibility: MEDIUM CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/daily-kos/
+    observed_at: '2026-09-06'
+    found: true
+- domain: infowars.com
+  stratum: low_quality
+  lean: right
+  assigned_category: null
+  mbfc:
+    slug: infowars
+    bias: EXTREME RIGHT
+    factual_reporting: VERY LOW
+    credibility: LOW CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/infowars/
+    observed_at: '2026-09-06'
+    found: true
+- domain: naturalnews.com
+  stratum: low_quality
+  lean: right
+  assigned_category: null
+  mbfc:
+    slug: natural-news
+    bias: FAR RIGHT CONSPIRACY-PSEUSDOSCIENCE
+    factual_reporting: VERY-LOW
+    credibility: LOW CREDIBILITY
+    source_url: https://mediabiasfactcheck.com/natural-news/
+    observed_at: '2026-09-06'
+    found: true
