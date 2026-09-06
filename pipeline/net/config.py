@@ -18,6 +18,16 @@ class FetchSettings(BaseSettings):
     allowed_schemes: frozenset[str] = frozenset({"http", "https"})
     allowed_ports: frozenset[int] = frozenset({80, 443})
 
+    # What the fetcher will accept. The default is the article path and is
+    # deliberately narrow: a fetch that returns a PDF, an image or an
+    # executable is not something the extraction pipeline should ever see.
+    # Feed discovery widens this explicitly (see FEED_CONTENT_TYPES) rather
+    # than the default being loosened for everyone, because the reason the
+    # article path is narrow does not stop applying just because feeds exist.
+    allowed_content_types: frozenset[str] = frozenset(
+        {"text/html", "application/xhtml+xml", "text/plain"}
+    )
+
     connect_timeout_s: float = Field(default=5.0, gt=0)
     total_timeout_s: float = Field(default=15.0, gt=0)
 

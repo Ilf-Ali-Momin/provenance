@@ -37,7 +37,6 @@ from pipeline.net.config import FetchSettings
 Resolver = Callable[[str, int], Sequence[str]]
 
 _DEFAULT_PORTS = {"http": 80, "https": 443}
-_TEXTUAL_TYPES = ("text/html", "application/xhtml+xml", "text/plain")
 
 
 @dataclass(frozen=True)
@@ -200,8 +199,8 @@ def _read_body(response: httpx.Response, final_url: str, settings: FetchSettings
     reason, and asserts the abort happens part way through.
     """
     content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
-    if content_type and not content_type.startswith(_TEXTUAL_TYPES):
-        raise UnsupportedContentTypeError("The fetched resource is not HTML or text.")
+    if content_type and content_type not in settings.allowed_content_types:
+        raise UnsupportedContentTypeError("The fetched resource is not an accepted type.")
 
     chunks: list[bytes] = []
     decoded = 0

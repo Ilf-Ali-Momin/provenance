@@ -132,3 +132,33 @@ def test_short_fragment_is_rejected_but_real_article_survives() -> None:
     article = extract_article(html)
     assert article is not None, "a full length article must survive the floor"
     assert len(article.text) >= 400
+
+
+CAPS_BYLINES = [
+    "DAVID MARCUS: Congress set to protect AM radio.",
+    "JANE DOE: The council met on Tuesday.",
+    "MARY-ANN O'BRIEN: Spending rose again.",
+]
+
+NOT_BYLINES = [
+    "BREAKING: The council met on Tuesday.",
+    "UPDATE: Spending rose again.",
+    "The council met: it approved the budget.",
+    "NASA: the launch will proceed.",
+]
+
+
+@pytest.mark.parametrize("raw", CAPS_BYLINES)
+def test_caps_name_prefix_byline_is_removed(raw: str) -> None:
+    """Measured on live Fox News copy: the "By" rule left these in place."""
+    out, removed = strip_publisher_markers(raw)
+    assert not out.strip().startswith(("DAVID", "JANE", "MARY")), out
+    assert "caps_byline" in removed
+
+
+@pytest.mark.parametrize("raw", NOT_BYLINES)
+def test_single_word_prefixes_are_not_treated_as_bylines(raw: str) -> None:
+    """A false positive here deletes the opening of a real article."""
+    out, removed = strip_publisher_markers(raw)
+    assert out.strip() == raw, f"content destroyed: {out!r}"
+    assert "caps_byline" not in removed

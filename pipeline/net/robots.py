@@ -23,7 +23,6 @@ gets ours.
 from __future__ import annotations
 
 import time
-import urllib.robotparser
 from dataclasses import dataclass, field
 from typing import Final
 from urllib.parse import urlsplit
@@ -31,6 +30,7 @@ from urllib.parse import urlsplit
 from pipeline.errors import ProvenanceError
 from pipeline.net.config import FetchSettings
 from pipeline.net.fetch import Resolver, fetch
+from pipeline.net.robots_rules import RuleSet, crawl_delay, parse, path_of
 
 DEFAULT_MIN_DELAY_S: Final = 2.0
 
@@ -42,13 +42,14 @@ class RobotsPolicy:
     host: str
     fetched: bool
     delay_s: float
-    _parser: urllib.robotparser.RobotFileParser | None = None
+    rules: RuleSet | None = None
 
     def allows(self, url: str, user_agent: str) -> bool:
         """Whether this URL may be fetched. Unfetchable robots means no."""
-        if not self.fetched or self._parser is None:
+        del user_agent  # the rule set was already selected for our agent
+        if not self.fetched or self.rules is None:
             return False
-        return self._parser.can_fetch(user_agent, url)
+        return self.rules.allows(path_of(url))
 
 
 @dataclass
@@ -75,8 +76,6 @@ class RobotsCache:
 
         scheme = urlsplit(url).scheme or "https"
         robots_url = f"{scheme}://{host}/robots.txt"
-        parser = urllib.robotparser.RobotFileParser()
-        parser.set_url(robots_url)
 
         try:
             response = fetch(robots_url, settings=self.settings, resolver=self.resolver)
@@ -87,10 +86,10 @@ class RobotsCache:
             self._policies[host] = policy
             return policy
 
-        parser.parse(response.text.splitlines())
-        declared = parser.crawl_delay(self.settings.user_agent)
+        rules = parse(response.text, self.settings.user_agent)
+        declared = crawl_delay(response.text, self.settings.user_agent)
         delay = max(float(declared or 0.0), self.min_delay_s)
-        policy = RobotsPolicy(host=host, fetched=True, delay_s=delay, _parser=parser)
+        policy = RobotsPolicy(host=host, fetched=True, delay_s=delay, rules=rules)
         self._policies[host] = policy
         return policy
 

@@ -57,6 +57,16 @@ _BYLINE: Final = re.compile(
     re.MULTILINE,
 )
 
+# A byline written as a name prefix rather than with "By": some outlets open
+# opinion pieces "DAVID MARCUS: Congress set to ...". Measured on live Fox News
+# copy on 2026-09-06, where the "By" rule left the author name in the corpus.
+# Two or more capitalised words are required so that single word openers such
+# as "BREAKING:" or "UPDATE:" are not mistaken for an author.
+_CAPS_BYLINE: Final = re.compile(
+    r"^\s*[A-Z][A-Z'\u2019-]+(?:\s+[A-Z][A-Z'\u2019-]+){1,3}:\s+",
+    re.MULTILINE,
+)
+
 _BOILERPLATE: Final = re.compile(
     r"^\s*(?:"
     r"(?:All rights reserved|Copyright|©)\b.*"
@@ -105,6 +115,8 @@ def strip_publisher_markers(text: str) -> tuple[str, dict[str, int]]:
 
     text, n = _BYLINE.subn("", text)
     _count("byline", n)
+    text, n = _CAPS_BYLINE.subn("", text)
+    _count("caps_byline", n)
     text, n = _BOILERPLATE.subn("", text)
     _count("boilerplate", n)
 
