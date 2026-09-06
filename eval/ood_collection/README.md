@@ -61,11 +61,14 @@ underfilled, not silently backfilled from an adjacent cell.
 
 ## 3. Timing
 
-Every article is published **after** the training snapshot date. The snapshot
-date is recorded in the manifest before collection starts, not inferred
-afterwards from what was collected.
+**Snapshot date: 2026-01-01.** Fixed on 2026-08-31, before any collection, and
+recorded here rather than inferred afterwards from whatever was collected. It
+sits comfortably after the ISOT style corpus was assembled, so no article in
+this suite can have been seen during the leakage work, and it leaves a wide
+collection window.
 
-Collection completes and the set is frozen **before the first training run**.
+Every article in the suite is published **after** that date. Collection
+completes and the set is frozen **before the first training run**.
 
 ## 4. Collection procedure
 
