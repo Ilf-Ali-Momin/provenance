@@ -16,6 +16,10 @@ dependencies = [
   # Postgres driver. Implied by ARCHITECTURE.md's "Postgres 16 with pgvector";
   # the binary build avoids a libpq toolchain on developer machines.
   "psycopg[binary]>=3.2",
+  # Approved 2026-08-31. Article text extraction for the OOD collector. Note
+  # it does not strip datelines or bylines; pipeline/text/extract.py does, and
+  # that is a construction rule rather than a tidying step (DATA.md).
+  "trafilatura>=2.0",
 ]
 
 [dependency-groups]
@@ -71,6 +75,13 @@ select = [
 ignore = [
   "ANN401",  # typing.Any is sometimes the honest annotation at a boundary
 ]
+# RUF001 exists to catch homoglyphs smuggled into source, which is a real
+# attack this project takes seriously. These three are the exception: the
+# extraction regexes must match the typography real publishers actually emit
+# (curly apostrophe in bylines, en and em dash in datelines), and replacing
+# them with ASCII would silently stop the publisher stripping from firing on
+# most wire copy. Allowed by codepoint so the config stays reviewable.
+allowed-confusables = ["’", "–", "—"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
