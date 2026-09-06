@@ -12,6 +12,7 @@ from eval.ood_collection.mbfc import (
     MbfcObservation,
     derive_lean,
     derive_stratum,
+    is_low_quality,
     parse_ratings,
     slug_for,
 )
@@ -76,16 +77,30 @@ def test_unknown_domain_is_left_unstratified() -> None:
     assert derive_lean(obs) is None
 
 
-def test_lean_is_recorded_independently_of_stratum() -> None:
-    """The regression guard for the measured confound.
+def test_low_quality_is_a_flag_and_does_not_move_the_stratum() -> None:
+    """The regression guard for D016's confound, resolved by D017.
 
-    A right leaning outlet MBFC rates low credibility lands in `low_quality`,
-    but its lean must still be recorded. Without this, `low_quality` silently
-    becomes a political category and nothing downstream can tell.
+    A right leaning outlet MBFC rates low credibility must stay in `partisan`
+    and carry the flag. If credibility ever moves it again, `partisan` starts
+    drifting left and `low_quality` becomes a political category.
     """
     obs = _obs("RIGHT", "LOW CREDIBILITY")
-    assert derive_stratum(obs, None) == "low_quality"
-    assert derive_lean(obs) == "right", "lean must survive routing into low_quality"
+    assert derive_stratum(obs, None) == "partisan", "credibility must not move the stratum"
+    assert is_low_quality(obs) is True
+    assert derive_lean(obs) == "right"
+
+
+def test_credibility_does_not_change_placement_either_way() -> None:
+    """Same lean, opposite credibility, same stratum."""
+    high = _obs("RIGHT", "HIGH CREDIBILITY")
+    low = _obs("RIGHT", "LOW CREDIBILITY")
+    assert derive_stratum(high, None) == derive_stratum(low, None) == "partisan"
+    assert is_low_quality(high) is False
+    assert is_low_quality(low) is True
+
+
+def test_missing_credibility_is_not_a_good_rating() -> None:
+    assert is_low_quality(_obs("LEFT", None)) is None
 
 
 @pytest.mark.parametrize(
@@ -105,16 +120,11 @@ def test_lean_mapping_is_symmetric(bias: str, lean: str) -> None:
     assert derive_lean(_obs(bias, "HIGH CREDIBILITY")) == lean
 
 
-def test_credibility_routing_is_what_pulls_lean_out_of_partisan() -> None:
-    """Documents the mechanism behind the measured 15:4 skew.
+def test_non_lean_label_leaves_the_domain_unstratified() -> None:
+    """QUESTIONABLE SOURCE is not a position on a spectrum.
 
-    Same bias label, different credibility, different stratum. This is not a
-    bug in the code; it is the property of the rule that made the partisan
-    stratum one sided, and it is asserted here so the behaviour cannot change
-    silently.
+    Better unstratified than placed somewhere nobody published.
     """
-    high = _obs("RIGHT", "HIGH CREDIBILITY")
-    low = _obs("RIGHT", "LOW CREDIBILITY")
-    assert derive_stratum(high, None) == "partisan"
-    assert derive_stratum(low, None) == "low_quality"
-    assert derive_lean(high) == derive_lean(low) == "right"
+    obs = _obs("QUESTIONABLE SOURCE", "LOW CREDIBILITY")
+    assert derive_stratum(obs, None) is None
+    assert is_low_quality(obs) is True

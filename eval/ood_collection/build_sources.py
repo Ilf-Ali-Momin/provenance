@@ -17,7 +17,13 @@ from typing import Final
 
 import yaml
 
-from eval.ood_collection.mbfc import derive_lean, derive_stratum, look_up, polite_pause
+from eval.ood_collection.mbfc import (
+    derive_lean,
+    derive_stratum,
+    is_low_quality,
+    look_up,
+    polite_pause,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -83,8 +89,9 @@ HEADER: Final = """# Candidate publishers for the OOD suite.
 # `assigned_category` is the one field this project sets itself, and only for
 # factual categories: a wire service is a wire service.
 #
-# `lean` is a separate axis and is never folded into `stratum`. See D016 for
-# the measured reason, and for the stratum question that is still open.
+# `lean` and `low_quality` are separate axes and neither is folded into
+# `stratum`. Credibility never decides placement. See D016 for the measurement
+# and D017 for the resolution.
 #
 # Regenerate with: PYTHONPATH=. .venv/bin/python eval/ood_collection/build_sources.py
 
@@ -103,6 +110,7 @@ def build() -> list[dict[str, object]]:
                 "domain": domain,
                 "stratum": stratum,
                 "lean": lean,
+                "low_quality": is_low_quality(obs),
                 "assigned_category": assigned,
                 "mbfc": obs.as_record(),
             }
@@ -127,13 +135,18 @@ def summarise(records: list[dict[str, object]]) -> None:
     is only a finding if somebody sees it.
     """
     logger.info("stratum counts: %s", dict(Counter(r["stratum"] for r in records)))
-    for stratum in ("partisan", "low_quality"):
+    logger.info("low_quality flag: %s", dict(Counter(r["low_quality"] for r in records)))
+    for stratum in ("partisan", "national"):
         leans = Counter(r["lean"] for r in records if r["stratum"] == stratum)
         left = leans["left"] + leans["lean_left"]
         right = leans["right"] + leans["lean_right"]
         logger.info(
-            "%-12s left-of-centre=%d right-of-centre=%d %s", stratum, left, right, dict(leans)
+            "%-10s left-of-centre=%d right-of-centre=%d %s", stratum, left, right, dict(leans)
         )
+    # The check D017 exists to make possible: the flag must not be one sided
+    # within a stratum, or it has become a proxy for lean again.
+    flagged = Counter(r["lean"] for r in records if r["low_quality"] is True)
+    logger.info("lean of low_quality flagged domains: %s", dict(flagged))
     misses = [r["domain"] for r in records if not r["mbfc"]["found"]]  # type: ignore[index]
     logger.info("no MBFC entry under the slug tried: %s", misses or "none")
 

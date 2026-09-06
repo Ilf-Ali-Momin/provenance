@@ -30,24 +30,46 @@ Both the article text and a per article record of the fields in
 
 Two axes, sampled independently so that neither collapses into the other.
 
-**Publisher type.** Six strata:
+**Publisher type.** Five strata. It was six until D017 removed `low_quality`,
+which is now a flag rather than a place:
 
-| Stratum | Description |
-| --- | --- |
-| `wire` | Wire services and their direct syndication |
-| `national` | National outlets with a masthead and a corrections policy |
-| `regional` | Regional and local outlets |
-| `partisan` | Openly partisan outlets, sampled across the spectrum, not from one side |
-| `aggregator` | Aggregators and republishers |
-| `low_quality` | Sites with known quality problems, per published listings, recorded with source |
+| Stratum | Description | Assigned by |
+| --- | --- | --- |
+| `wire` | Wire services and their direct syndication | this project (observable) |
+| `national` | Outlets MBFC rates as centre or pro-science | MBFC bias label |
+| `regional` | Regional and local outlets | this project (observable) |
+| `partisan` | Outlets MBFC places off centre, sampled across the spectrum | MBFC bias label |
+| `aggregator` | Aggregators and republishers | this project (observable) |
+
+A domain with no MBFC entry, or with a non-lean label such as
+`QUESTIONABLE SOURCE`, stays unstratified rather than being placed somewhere
+nobody published.
 
 `partisan` is sampled across the spectrum deliberately. A partisan stratum drawn
 from one side reintroduces publisher identity as a confound, which is the exact
 failure this project exists to document.
 
-`low_quality` membership is recorded as an external observation with its source
-and date, in the same shape the source registry uses (D007). It is a note about
-where the article came from, never a label on the article.
+**Quality is a flag, not a stratum (D017).** Media Bias/Fact Check's credibility
+rating is recorded per domain as an independent boolean, `low_quality`, which
+never moves a publisher between strata. This is not tidiness. Routing the
+stratum by credibility was measured on 41 candidates and left `partisan` at 15
+left of centre to 4 right of centre, and the quality stratum at 7 right to 0
+left, because MBFC rates more right leaning outlets low on credibility. The
+stratum had become a proxy for politics while wearing a label about quality.
+Decoupling the axes moves `partisan` to 15:11.
+
+Both the credibility rating and the bias label are MBFC's, recorded with the
+URL they came from and the date read (D007, SECURITY.md control 8). This
+project does not rate publishers.
+
+**The residual, which sampling does not fix.** All seven flagged domains in the
+candidate set are right of centre. Any analysis conditioned on the
+`low_quality` flag is therefore confounded with lean and must say so. The flag
+describes the corpus; it is not a safe grouping variable on its own.
+
+**Sampling within `partisan` is balanced by lean bucket, not proportional.**
+15:11 is better than 15:4 and is still not even, so equal numbers are drawn per
+lean bucket and the achieved counts are recorded per cell.
 
 **Topic.** Four strata: `politics`, `health`, `science`, `business`.
 

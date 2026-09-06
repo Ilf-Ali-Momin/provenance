@@ -54,24 +54,21 @@ _FIELDS: Final[dict[str, re.Pattern[str]]] = {
     "credibility": re.compile(r"Credibility Rating:\s*" + _CAPS_RUN),
 }
 
-# How an MBFC bias label maps to a collection stratum. Written down so the
-# derivation can be argued with, rather than buried in a conditional.
-STRATUM_RULES: Final[dict[str, str]] = {
-    "LEFT": "partisan",
-    "LEFT-CENTER": "partisan",
-    "RIGHT-CENTER": "partisan",
-    "RIGHT": "partisan",
-    "EXTREME LEFT": "partisan",
-    "EXTREME RIGHT": "partisan",
-    "LEAST BIASED": "national",
-    "PRO-SCIENCE": "national",
-    "QUESTIONABLE SOURCE": "low_quality",
-    "CONSPIRACY-PSEUDOSCIENCE": "low_quality",
-    "SATIRE": "low_quality",
+# How a lean bucket maps to a collection stratum. Only two outcomes: an outlet
+# with a lean is partisan, an outlet without one is national. Credibility does
+# not appear here at all, which is the whole point of D017.
+STRATUM_BY_LEAN: Final[dict[str, str]] = {
+    "left": "partisan",
+    "lean_left": "partisan",
+    "lean_right": "partisan",
+    "right": "partisan",
+    "center": "national",
 }
 
-# A credibility label at or below this is treated as low quality regardless of
-# the bias label, because credibility is the axis the stratum is about.
+# Credibility labels that set the low_quality flag. A flag, never a stratum:
+# routing by credibility moved every low credibility right leaning outlet out
+# of `partisan`, leaving it 15 left to 4 right, and made `low_quality` 7 right
+# to 0 left. See D016 for the measurement and D017 for this resolution.
 LOW_CREDIBILITY: Final = frozenset({"LOW CREDIBILITY", "MIXED CREDIBILITY"})
 
 # Political lean is recorded as its own axis and never collapsed into the
@@ -191,24 +188,39 @@ def derive_lean(obs: MbfcObservation) -> str | None:
     return None
 
 
+def is_low_quality(obs: MbfcObservation) -> bool | None:
+    """MBFC's credibility rating as an orthogonal flag.
+
+    Deliberately not a stratum (D017). Credibility and political lean are
+    correlated in MBFC's ratings, so letting credibility decide the stratum
+    made the stratum a proxy for lean. As a flag it can sit on a partisan
+    outlet of either side without moving it, and the corpus can be filtered or
+    balanced on either axis independently.
+
+    Returns None when MBFC published no credibility rating, which is distinct
+    from publishing a good one.
+    """
+    if not obs.found or not obs.credibility:
+        return None
+    return obs.credibility.upper() in LOW_CREDIBILITY
+
+
 def derive_stratum(obs: MbfcObservation, assigned: str | None) -> str | None:
-    """Derive the publisher stratum from MBFC's labels.
+    """Derive the publisher stratum. Lean decides; credibility never does.
 
     ``assigned`` is the factual category this project may set itself -- wire,
     regional, aggregator -- which wins, because "Reuters is a wire service" is
-    an observable fact rather than an opinion. Only where no factual category
-    applies does the MBFC label decide, and where MBFC has no entry the domain
-    stays unstratified.
+    an observable fact rather than an opinion. Otherwise the stratum follows
+    the lean bucket, and where MBFC has no entry, or gives only a non-lean
+    label such as QUESTIONABLE SOURCE, the domain stays unstratified rather
+    than being given a placement nobody published.
     """
     if assigned in {"wire", "regional", "aggregator"}:
         return assigned
-    if not obs.found:
+    lean = derive_lean(obs)
+    if lean is None:
         return None
-    if obs.credibility and obs.credibility.upper() in LOW_CREDIBILITY:
-        return "low_quality"
-    if obs.bias:
-        return STRATUM_RULES.get(obs.bias.upper())
-    return None
+    return STRATUM_BY_LEAN.get(lean)
 
 
 def polite_pause() -> None:

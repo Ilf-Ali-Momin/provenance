@@ -1,23 +1,27 @@
 # Candidate publishers for the OOD suite.
 #
-# `stratum` and `lean` are DERIVED from Media Bias/Fact Check labels by
-# the rules in eval/ood_collection/mbfc.py. The labels themselves are
-# MBFC's, recorded with the URL they came from and the date read. This
-# project does not rate publishers (D007, SECURITY.md control 8).
+# `stratum` and `lean` are DERIVED from Media Bias/Fact Check labels by the
+# rules in eval/ood_collection/mbfc.py. The labels themselves are MBFC's,
+# recorded with the URL they came from and the date read. This project does
+# not rate publishers (D007, SECURITY.md control 8).
 #
-# `assigned_category` is the one field this project sets itself, and only
-# for factual categories: a wire service is a wire service.
+# `assigned_category` is the one field this project sets itself, and only for
+# factual categories: a wire service is a wire service.
 #
-# lean is kept as its own axis and never folded into stratum. See D016.
+# `lean` and `low_quality` are separate axes and neither is folded into
+# `stratum`. Credibility never decides placement. See D016 for the measurement
+# and D017 for the resolution.
 #
-# Generated 2026-09-06 over 41 candidates.
+# Regenerate with: PYTHONPATH=. .venv/bin/python eval/ood_collection/build_sources.py
 
 publishers:
 - domain: reuters.com
   stratum: wire
   lean: center
+  low_quality: false
   assigned_category: wire
   mbfc:
+    domain: reuters.com
     slug: reuters
     bias: LEAST BIASED
     factual_reporting: VERY HIGH
@@ -28,8 +32,10 @@ publishers:
 - domain: apnews.com
   stratum: wire
   lean: lean_left
+  low_quality: false
   assigned_category: wire
   mbfc:
+    domain: apnews.com
     slug: associated-press
     bias: LEFT-CENTER
     factual_reporting: HIGH
@@ -40,8 +46,10 @@ publishers:
 - domain: afp.com
   stratum: wire
   lean: null
+  low_quality: null
   assigned_category: wire
   mbfc:
+    domain: afp.com
     slug: agence-france-presse-afp
     bias: null
     factual_reporting: null
@@ -52,8 +60,10 @@ publishers:
 - domain: news.yahoo.com
   stratum: aggregator
   lean: lean_left
+  low_quality: false
   assigned_category: aggregator
   mbfc:
+    domain: news.yahoo.com
     slug: yahoo-news
     bias: LEFT-CENTER
     factual_reporting: HIGH
@@ -64,8 +74,10 @@ publishers:
 - domain: msn.com
   stratum: aggregator
   lean: null
+  low_quality: null
   assigned_category: aggregator
   mbfc:
+    domain: msn.com
     slug: msn-news
     bias: null
     factual_reporting: null
@@ -76,8 +88,10 @@ publishers:
 - domain: chicagotribune.com
   stratum: regional
   lean: lean_right
+  low_quality: false
   assigned_category: regional
   mbfc:
+    domain: chicagotribune.com
     slug: chicago-tribune
     bias: RIGHT-CENTER
     factual_reporting: HIGH
@@ -88,8 +102,10 @@ publishers:
 - domain: dallasnews.com
   stratum: regional
   lean: null
+  low_quality: null
   assigned_category: regional
   mbfc:
+    domain: dallasnews.com
     slug: the-dallas-morning-news
     bias: null
     factual_reporting: null
@@ -100,8 +116,10 @@ publishers:
 - domain: seattletimes.com
   stratum: regional
   lean: null
+  low_quality: null
   assigned_category: regional
   mbfc:
+    domain: seattletimes.com
     slug: the-seattle-times
     bias: null
     factual_reporting: null
@@ -112,8 +130,10 @@ publishers:
 - domain: manchestereveningnews.co.uk
   stratum: regional
   lean: lean_left
+  low_quality: false
   assigned_category: regional
   mbfc:
+    domain: manchestereveningnews.co.uk
     slug: manchester-evening-news
     bias: LEFT-CENTER
     factual_reporting: HIGH
@@ -124,8 +144,10 @@ publishers:
 - domain: bbc.com
   stratum: national
   lean: center
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: bbc.com
     slug: bbc
     bias: LEAST BIASED
     factual_reporting: MOSTLY FACTUAL
@@ -136,8 +158,10 @@ publishers:
 - domain: theguardian.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: theguardian.com
     slug: the-guardian
     bias: LEFT-CENTER
     factual_reporting: HIGH
@@ -148,8 +172,10 @@ publishers:
 - domain: nytimes.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: nytimes.com
     slug: new-york-times
     bias: LEFT-CENTER
     factual_reporting: HIGH
@@ -160,8 +186,10 @@ publishers:
 - domain: wsj.com
   stratum: partisan
   lean: lean_right
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: wsj.com
     slug: wall-street-journal
     bias: RIGHT-CENTER
     factual_reporting: MOSTLY FACTUAL
@@ -172,8 +200,10 @@ publishers:
 - domain: washingtonpost.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: washingtonpost.com
     slug: washington-post
     bias: LEFT-CENTER
     factual_reporting: MOSTLY FACTUAL
@@ -184,8 +214,10 @@ publishers:
 - domain: npr.org
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: npr.org
     slug: npr
     bias: LEFT-CENTER
     factual_reporting: HIGH
@@ -196,8 +228,10 @@ publishers:
 - domain: cnn.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: cnn.com
     slug: cnn
     bias: LEFT-CENTER
     factual_reporting: MOSTLY FACTUAL
@@ -208,8 +242,10 @@ publishers:
 - domain: nbcnews.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: nbcnews.com
     slug: nbc-news
     bias: LEFT-CENTER
     factual_reporting: HIGH
@@ -220,8 +256,10 @@ publishers:
 - domain: cbsnews.com
   stratum: partisan
   lean: lean_right
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: cbsnews.com
     slug: cbs-news
     bias: RIGHT-CENTER
     factual_reporting: MOSTLY FACTUAL
@@ -232,8 +270,10 @@ publishers:
 - domain: usatoday.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: usatoday.com
     slug: usa-today
     bias: LEFT-CENTER
     factual_reporting: MOSTLY FACTUAL
@@ -244,8 +284,10 @@ publishers:
 - domain: thehill.com
   stratum: national
   lean: center
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: thehill.com
     slug: the-hill
     bias: LEAST BIASED
     factual_reporting: MOSTLY FACTUAL
@@ -256,8 +298,10 @@ publishers:
 - domain: politico.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: politico.com
     slug: politico
     bias: LEFT-CENTER
     factual_reporting: HIGH
@@ -268,8 +312,10 @@ publishers:
 - domain: bloomberg.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: bloomberg.com
     slug: bloomberg
     bias: LEFT-CENTER
     factual_reporting: MOSTLY FACTUAL
@@ -280,8 +326,10 @@ publishers:
 - domain: cnbc.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: cnbc.com
     slug: cnbc
     bias: LEFT-CENTER
     factual_reporting: MOSTLY FACTUAL
@@ -292,8 +340,10 @@ publishers:
 - domain: forbes.com
   stratum: national
   lean: center
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: forbes.com
     slug: forbes
     bias: LEAST BIASED
     factual_reporting: MOSTLY FACTUAL
@@ -304,8 +354,10 @@ publishers:
 - domain: statnews.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: statnews.com
     slug: stat-news
     bias: LEFT-CENTER
     factual_reporting: HIGH
@@ -316,8 +368,10 @@ publishers:
 - domain: sciencedaily.com
   stratum: national
   lean: center
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: sciencedaily.com
     slug: science-daily
     bias: PRO-SCIENCE
     factual_reporting: HIGH
@@ -326,10 +380,12 @@ publishers:
     observed_at: '2026-09-06'
     found: true
 - domain: foxnews.com
-  stratum: low_quality
+  stratum: partisan
   lean: right
+  low_quality: true
   assigned_category: null
   mbfc:
+    domain: foxnews.com
     slug: fox-news
     bias: RIGHT
     factual_reporting: LOW
@@ -340,8 +396,10 @@ publishers:
 - domain: nationalreview.com
   stratum: partisan
   lean: right
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: nationalreview.com
     slug: national-review
     bias: RIGHT
     factual_reporting: MOSTLY FACTUAL
@@ -352,8 +410,10 @@ publishers:
 - domain: reason.com
   stratum: null
   lean: null
+  low_quality: null
   assigned_category: null
   mbfc:
+    domain: reason.com
     slug: reason-magazine
     bias: null
     factual_reporting: null
@@ -364,8 +424,10 @@ publishers:
 - domain: dailywire.com
   stratum: partisan
   lean: right
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: dailywire.com
     slug: the-daily-wire
     bias: RIGHT
     factual_reporting: MIXED
@@ -374,10 +436,12 @@ publishers:
     observed_at: '2026-09-06'
     found: true
 - domain: newsmax.com
-  stratum: low_quality
+  stratum: partisan
   lean: right
+  low_quality: true
   assigned_category: null
   mbfc:
+    domain: newsmax.com
     slug: newsmax
     bias: RIGHT
     factual_reporting: LOW
@@ -386,10 +450,12 @@ publishers:
     observed_at: '2026-09-06'
     found: true
 - domain: breitbart.com
-  stratum: low_quality
+  stratum: partisan
   lean: right
+  low_quality: true
   assigned_category: null
   mbfc:
+    domain: breitbart.com
     slug: breitbart
     bias: RIGHT
     factual_reporting: MIXED
@@ -398,10 +464,12 @@ publishers:
     observed_at: '2026-09-06'
     found: true
 - domain: oann.com
-  stratum: low_quality
+  stratum: partisan
   lean: right
+  low_quality: true
   assigned_category: null
   mbfc:
+    domain: oann.com
     slug: one-america-news-network
     bias: FAR RIGHT
     factual_reporting: LOW
@@ -410,10 +478,12 @@ publishers:
     observed_at: '2026-09-06'
     found: true
 - domain: thegatewaypundit.com
-  stratum: low_quality
+  stratum: partisan
   lean: right
+  low_quality: true
   assigned_category: null
   mbfc:
+    domain: thegatewaypundit.com
     slug: the-gateway-pundit
     bias: EXTREME RIGHT
     factual_reporting: VERY LOW
@@ -424,8 +494,10 @@ publishers:
 - domain: motherjones.com
   stratum: partisan
   lean: lean_left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: motherjones.com
     slug: mother-jones
     bias: LEFT-CENTER
     factual_reporting: HIGH
@@ -436,8 +508,10 @@ publishers:
 - domain: thedailybeast.com
   stratum: partisan
   lean: left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: thedailybeast.com
     slug: daily-beast
     bias: LEFT
     factual_reporting: MIXED
@@ -448,8 +522,10 @@ publishers:
 - domain: theintercept.com
   stratum: partisan
   lean: left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: theintercept.com
     slug: the-intercept
     bias: LEFT
     factual_reporting: MOSTLY FACTUAL
@@ -460,8 +536,10 @@ publishers:
 - domain: jacobin.com
   stratum: null
   lean: null
+  low_quality: null
   assigned_category: null
   mbfc:
+    domain: jacobin.com
     slug: jacobin-magazine
     bias: null
     factual_reporting: null
@@ -472,8 +550,10 @@ publishers:
 - domain: dailykos.com
   stratum: partisan
   lean: left
+  low_quality: false
   assigned_category: null
   mbfc:
+    domain: dailykos.com
     slug: daily-kos
     bias: LEFT
     factual_reporting: MIXED
@@ -482,10 +562,12 @@ publishers:
     observed_at: '2026-09-06'
     found: true
 - domain: infowars.com
-  stratum: low_quality
+  stratum: partisan
   lean: right
+  low_quality: true
   assigned_category: null
   mbfc:
+    domain: infowars.com
     slug: infowars
     bias: EXTREME RIGHT
     factual_reporting: VERY LOW
@@ -494,10 +576,12 @@ publishers:
     observed_at: '2026-09-06'
     found: true
 - domain: naturalnews.com
-  stratum: low_quality
+  stratum: partisan
   lean: right
+  low_quality: true
   assigned_category: null
   mbfc:
+    domain: naturalnews.com
     slug: natural-news
     bias: FAR RIGHT CONSPIRACY-PSEUSDOSCIENCE
     factual_reporting: VERY-LOW
