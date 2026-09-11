@@ -98,7 +98,7 @@ _BOILERPLATE: Final = re.compile(
 # nearby is ordinary content and stays.
 _SENTENCE_PART: Final = re.compile(r"[^.!?]+[.!?]*\s*")
 _NEWSLETTER: Final = re.compile(r"\bnewsletters?\b", re.IGNORECASE)
-_SIGNUP: Final = re.compile(r"\b(?:sign\s+up|subscribe)\b", re.IGNORECASE)
+_SIGNUP: Final = re.compile(r"\b(?:sign(?:ing)?\s+up|subscrib(?:e|ing))\b", re.IGNORECASE)
 
 
 # A named newsletter widget on its own line: "The Reason Roundup Newsletter by
@@ -170,6 +170,71 @@ _SELF_DISCLOSURE_CUE: Final = re.compile(
 )
 _DENIAL: Final = re.compile(r"\b(?:denies|has denied|disputes|rejects)\b", re.IGNORECASE)
 MAX_DENIAL_SENTENCE: Final = 90
+
+
+# Contact, follow and credit lines. Measured in the full run of 2026-09-11:
+# a Breitbart author bio carried "is a reporter for [OUTLET]. Email him at
+# <address>. Follow him on Twitter", CNBC and NBC News kept "follow us on
+# TikTok, Facebook, Instagram", The Atlantic kept "<name> contributed to this
+# newsletter", and a Dispatch article kept "(Photo by <name>/<outlet> via
+# <agency>)". Each identifies the house or its staff, and the email address is
+# personal data this corpus has no reason to hold.
+_FOLLOW_OR_CONTACT: Final = re.compile(
+    r"\b(?:follow\s+(?:us|him|her|them)\s+on"
+    r"|(?:e-?mail|contact|reach)\s+(?:him|her|them|the\s+author)\s+at)\b",
+    re.IGNORECASE,
+)
+_CONTRIBUTOR_CREDIT: Final = re.compile(
+    r"\b(?:contributed|contributing)\s+(?:reporting\s+)?to\s+this\s+"
+    r"(?:newsletter|report|article|story)\b",
+    re.IGNORECASE,
+)
+_STAFF_BIO: Final = re.compile(
+    r"\bis\s+(?:a|an|the)\s+(?:[\w-]+\s+){0,3}"
+    r"(?:reporter|writer|editor|correspondent|columnist|contributor|producer|host)"
+    r"\s+(?:for|at)\s+" + re.escape("[OUTLET]"),
+    re.IGNORECASE,
+)
+_EMAIL: Final = re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b")
+_PHOTO_CREDIT_PAREN: Final = re.compile(
+    r"\s*\((?:Photos?|Photograph|Images?|Illustration)\s+(?:by|credit|courtesy of)\s*:?"
+    r"\s*[^)]{1,160}\)",
+    re.IGNORECASE,
+)
+EMAIL_MASK: Final = "[EMAIL]"
+
+
+def strip_contact_and_credit_lines(text: str) -> tuple[str, dict[str, int]]:
+    """Remove follow and contact lines, staff bios, credits, and email addresses.
+
+    Email addresses go first and are replaced with a constant, both because
+    they are personal data and because their dots would otherwise split one
+    contact sentence into fragments the sentence rules cannot recognise.
+    Staff bios are recognised by the outlet mask, so this runs after masking.
+    """
+    counts: dict[str, int] = {}
+    text, n = _EMAIL.subn(EMAIL_MASK, text)
+    if n:
+        counts["email_address"] = n
+    text, n = _PHOTO_CREDIT_PAREN.subn("", text)
+    if n:
+        counts["photo_credit"] = n
+
+    lines_out: list[str] = []
+    for line in text.split("\n"):
+        parts = _SENTENCE_PART.findall(line) or [line]
+        kept: list[str] = []
+        for part in parts:
+            if _FOLLOW_OR_CONTACT.search(part):
+                counts["follow_or_contact"] = counts.get("follow_or_contact", 0) + 1
+            elif _CONTRIBUTOR_CREDIT.search(part):
+                counts["contributor_credit"] = counts.get("contributor_credit", 0) + 1
+            elif _STAFF_BIO.search(part):
+                counts["staff_bio"] = counts.get("staff_bio", 0) + 1
+            else:
+                kept.append(part)
+        lines_out.append("".join(kept).rstrip() if len(kept) != len(parts) else line)
+    return "\n".join(lines_out), counts
 
 
 def strip_self_disclosures(text: str) -> tuple[str, int]:
@@ -340,6 +405,9 @@ def strip_publisher_markers(
         _count("outlet_name", n)
         text, n = strip_self_disclosures(text)
         _count("self_disclosure", n)
+    text, contact_counts = strip_contact_and_credit_lines(text)
+    for key, value in contact_counts.items():
+        _count(key, value)
 
     lines = text.split("\n")
     cleaned: list[str] = []

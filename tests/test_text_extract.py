@@ -323,3 +323,65 @@ def test_ownership_about_another_company_is_content() -> None:
     out, removed = strip_publisher_markers(raw, ["Mother Jones"])
     assert out.strip() == raw
     assert "self_disclosure" not in removed
+
+
+# -------------------------------------------- contact, follow and credit lines
+
+from pipeline.text.extract import EMAIL_MASK  # noqa: E402
+
+
+def test_staff_bio_with_contact_details_is_removed() -> None:
+    """Measured on Breitbart in the full run, including a reporter's email."""
+    raw = (
+        "The vote passed. Joel Klein is a reporter for Breitbart News. Email him at "
+        "jklein@example.com. Follow him on Twitter @JoelKlein."
+    )
+    out, removed = strip_publisher_markers(raw, ["Breitbart News", "Breitbart"])
+    assert out.strip() == "The vote passed."
+    assert "jklein" not in out and "@JoelKlein" not in out
+    assert removed["email_address"] == 1
+    assert removed["staff_bio"] == 1
+    assert removed["follow_or_contact"] == 2
+
+
+def test_follow_us_promo_is_removed() -> None:
+    raw = "Get the latest money news, and follow us on TikTok, Facebook and X. Officials spoke."
+    out, removed = strip_publisher_markers(raw)
+    assert out.strip() == "Officials spoke."
+    assert removed["follow_or_contact"] == 1
+
+
+def test_following_as_ordinary_verb_is_content() -> None:
+    raw = "Investors will follow the central bank closely this week."
+    out, removed = strip_publisher_markers(raw)
+    assert out.strip() == raw
+    assert "follow_or_contact" not in removed
+
+
+def test_signing_up_form_of_promo_is_removed() -> None:
+    """Liverpool Echo in the full run; the rule only knew "sign up"."""
+    raw = "Stay updated by signing up to our daily and breaking newsletter. The match ended."
+    out, removed = strip_publisher_markers(raw)
+    assert out.strip() == "The match ended."
+    assert removed["newsletter_promo"] >= 1
+
+
+def test_contributor_credit_is_removed() -> None:
+    raw = "The book tour continues. Rafaela Jinich contributed to this newsletter."
+    out, removed = strip_publisher_markers(raw)
+    assert out.strip() == "The book tour continues."
+    assert removed["contributor_credit"] == 1
+
+
+def test_parenthetical_photo_credit_is_removed() -> None:
+    raw = "Veterans gathered (Photo by Craig F. Walker/Example via Getty Images) in the square."
+    out, removed = strip_publisher_markers(raw)
+    assert "Walker" not in out
+    assert out.strip() == "Veterans gathered in the square."
+    assert removed["photo_credit"] == 1
+
+
+def test_email_in_reporting_is_masked_not_dropped() -> None:
+    out, removed = strip_publisher_markers("Tips can be sent to tips@example.org by Friday.")
+    assert out.strip() == f"Tips can be sent to {EMAIL_MASK} by Friday."
+    assert removed["email_address"] == 1

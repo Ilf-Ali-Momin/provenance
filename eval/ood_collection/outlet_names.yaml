@@ -22,6 +22,10 @@
 #   thefederalist   bare "Federalist" collides with the Federalist Society
 #   thehill.com     "the Hill" in lower case is Capitol Hill, so only "The Hill"
 #   theatlantic.com "the Atlantic" is the ocean, so only "The Atlantic"
+#
+# Added after the full run audit: "the Intercept", "the Dispatch" and "Liverpool
+# ECHO" appeared unmasked. A capitalised noun after a lower case "the" is safe for
+# these two, since the common words are lower case; ocean and hill are not.
 
 reuters.com: [Thomson Reuters, Reuters]
 apnews.com: [Associated Press, AP News]
@@ -42,7 +46,7 @@ sfchronicle.com: [San Francisco Chronicle, SF Chronicle, the Chronicle]
 denverpost.com: [The Denver Post, Denver Post]
 miamiherald.com: [Miami Herald, the Herald]
 manchestereveningnews.co.uk: [Manchester Evening News]
-liverpoolecho.co.uk: [Liverpool Echo, the ECHO, the Echo]
+liverpoolecho.co.uk: [Liverpool ECHO, Liverpool Echo, the ECHO, the Echo]
 
 bbc.com: [BBC News, BBC]
 theguardian.com: [The Guardian, the Guardian, Guardian]
@@ -76,7 +80,7 @@ foxnews.com: [Fox News Digital, Fox News Channel, Fox News, FOX News]
 nationalreview.com: [National Review]
 reason.com: [Reason magazine, Reason Foundation, Reason.com, Reason TV]
 washingtonexaminer.com: [Washington Examiner, the Examiner]
-thedispatch.com: [The Dispatch]
+thedispatch.com: [The Dispatch, the Dispatch]
 nypost.com: [New York Post, NY Post, The Post]
 spectator.co.uk: [The Spectator]
 nationalpost.com: [National Post]
@@ -90,7 +94,7 @@ thegatewaypundit.com: [The Gateway Pundit, Gateway Pundit]
 
 motherjones.com: [Mother Jones]
 thedailybeast.com: [The Daily Beast, Daily Beast]
-theintercept.com: [The Intercept]
+theintercept.com: [The Intercept, the Intercept]
 jacobin.com: [Jacobin]
 dailykos.com: [Daily Kos]
 vox.com: [Vox Media, Vox.com, Vox]
