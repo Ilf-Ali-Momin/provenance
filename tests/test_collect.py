@@ -519,3 +519,26 @@ def test_publisher_domain_is_always_a_self_name() -> None:
     assert names["breitbart.com"][0] == "Breitbart News", "listed names keep their order"
     assert "breitbart.com" in names["breitbart.com"]
     assert names["vox.com"].count("vox.com") == 1
+
+
+def test_future_dated_entries_are_rejected_before_fetching(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A date after collection is wrong; guessing which way it is wrong is worse."""
+    from datetime import timedelta
+
+    later = datetime.now(UTC) + timedelta(days=30)
+    docs, rej, fetched = _run(monkeypatch, _entries(("https://example.com/future", later)))
+    assert docs == []
+    assert rej.as_dict()["future_dated"] == 1
+    assert fetched == []
+
+
+def test_dates_within_a_day_of_collection_are_kept(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Time zone differences must not read as future dating."""
+    from datetime import timedelta
+
+    soon = datetime.now(UTC) + timedelta(hours=10)
+    docs, rej, _ = _run(monkeypatch, _entries(("https://example.com/tz", soon)))
+    assert len(docs) == 1
+    assert "future_dated" not in rej.as_dict()

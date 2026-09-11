@@ -35,7 +35,7 @@ import logging
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Final
 from urllib.parse import urlsplit
@@ -54,6 +54,13 @@ from pipeline.text.extract import extract_article
 logger = logging.getLogger(__name__)
 
 SNAPSHOT_DATE: Final = datetime(2026, 1, 1, tzinfo=UTC)
+
+# A publication date later than the moment of collection is not a real date.
+# The first frozen suite holds one: a cbsnews.com article dated 2026-10-03 and
+# collected on 2026-09-11, which read day first would be 2026-03-10. One day of
+# tolerance covers time zones; beyond that the entry is rejected rather than
+# guessed at.
+FUTURE_TOLERANCE: Final = timedelta(days=1)
 SOURCES: Final = Path("eval/ood_collection/sources.yaml")
 OUTLET_NAMES: Final = Path("eval/ood_collection/outlet_names.yaml")
 
@@ -365,12 +372,16 @@ def collect_domain(
         urlsplit(feed_url).netloc.lower().removeprefix("www."),
     }
     documents: list[Document] = []
+    collected_now = datetime.now(UTC)
 
     for entry in entries:
         if len(documents) >= limit:
             break
         if entry.published is None:
             rejections.record("undated")
+            continue
+        if entry.published > collected_now + FUTURE_TOLERANCE:
+            rejections.record("future_dated")
             continue
         if entry.published < snapshot:
             rejections.record("before_snapshot")
