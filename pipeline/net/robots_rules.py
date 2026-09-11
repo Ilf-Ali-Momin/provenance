@@ -156,3 +156,23 @@ def crawl_delay(text: str, user_agent: str) -> float | None:
         if agent and agent != "*" and (agent in token or token in agent):
             return delay
     return applicable.get("*")
+
+
+def sitemap_urls(text: str) -> list[str]:
+    """Sitemap locations declared in robots.txt, in order, without repeats.
+
+    `Sitemap:` lines are not scoped to a user agent group, so every one in the
+    file applies. The field name is matched case insensitively and the value
+    may be an absolute URL containing its own colons, so only the first colon
+    separates field from value.
+    """
+    found: list[str] = []
+    for raw_line in text.splitlines():
+        line = raw_line.split("#", 1)[0].strip()
+        name, sep, value = line.partition(":")
+        if not sep or name.strip().lower() != "sitemap":
+            continue
+        url = value.strip()
+        if url and url not in found:
+            found.append(url)
+    return found

@@ -39,8 +39,12 @@ PUBLISHER = {
 class StubRobots:
     """Allows everything, waits for nothing."""
 
-    def __init__(self, *, allow: bool = True) -> None:
+    def __init__(self, *, allow: bool = True, sitemaps: list[str] | None = None) -> None:
         self.allow = allow
+        self.sitemaps = sitemaps or []
+
+    def sitemaps_for(self, url: str) -> list[str]:
+        return self.sitemaps
 
     def allows(self, url: str) -> bool:
         return self.allow
@@ -188,3 +192,222 @@ def test_summary_reports_rejections_and_balance() -> None:
     assert out["publisher_markers_removed"] == {"dateline": 1}
     assert out["documents_with_invisible_chars"] == 1
     assert out["snapshot_date"] == SNAPSHOT_DATE.date().isoformat()
+
+
+# --------------------------------------------------------- refusals and status
+
+
+def _statuses(monkeypatch: pytest.MonkeyPatch, by_url: dict[str, int]) -> list[str]:
+    from eval.ood_collection import collect as mod
+
+    fetched: list[str] = []
+
+    def fake_find_feed(
+        domain: str, robots: object, settings: FetchSettings
+    ) -> tuple[str, list[FeedEntry]]:
+        entries = [
+            FeedEntry(url=u, title="t", published=datetime(2026, 3, 1, tzinfo=UTC)) for u in by_url
+        ]
+        return ("https://example.com/rss", entries)
+
+    def fake_fetch(url: str, **kwargs: object) -> FetchResult:
+        fetched.append(url)
+        return FetchResult(
+            final_url=url, status_code=by_url[url], content_type="text/html", text=ARTICLE_HTML
+        )
+
+    monkeypatch.setattr(mod, "find_feed", fake_find_feed)
+    monkeypatch.setattr(mod, "fetch", fake_fetch)
+    return fetched
+
+
+def _collect(rej: Rejection) -> list[Document]:
+    return collect_domain(
+        PUBLISHER,
+        limit=10,
+        robots=StubRobots(),  # type: ignore[arg-type]
+        fetch_settings=FetchSettings(),
+        extract_settings=ExtractSettings(),
+        rejections=rej,
+    )
+
+
+def test_refusal_mid_run_stops_asking_that_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 403 is a decision by the publisher, not a missing page to retry past."""
+    fetched = _statuses(
+        monkeypatch,
+        {
+            "https://example.com/1": 200,
+            "https://example.com/2": 403,
+            "https://example.com/3": 200,
+        },
+    )
+    rej = Rejection()
+    docs = _collect(rej)
+    assert len(docs) == 1
+    assert rej.as_dict()["host_refused"] == 1
+    assert "https://example.com/3" not in fetched, "must not keep asking after a refusal"
+
+
+def test_missing_page_is_skipped_not_fatal(monkeypatch: pytest.MonkeyPatch) -> None:
+    _statuses(monkeypatch, {"https://example.com/1": 404, "https://example.com/2": 200})
+    rej = Rejection()
+    docs = _collect(rej)
+    assert len(docs) == 1
+    assert rej.as_dict()["http_404"] == 1
+
+
+def _feed_host(monkeypatch: pytest.MonkeyPatch, pages: dict[str, tuple[int, str]]) -> list[str]:
+    from eval.ood_collection import collect as mod
+
+    asked: list[str] = []
+
+    def fake_fetch(url: str, **kwargs: object) -> FetchResult:
+        asked.append(url)
+        status, body = pages.get(url, (404, "<!DOCTYPE html><html>not found</html>"))
+        return FetchResult(final_url=url, status_code=status, content_type="text/html", text=body)
+
+    monkeypatch.setattr(mod, "fetch", fake_fetch)
+    return asked
+
+
+def test_homepage_refusal_ends_discovery_at_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    from eval.ood_collection.collect import find_feed
+
+    asked = _feed_host(monkeypatch, {"https://example.com/": (403, "Forbidden")})
+    result = find_feed("example.com", StubRobots(), FetchSettings())  # type: ignore[arg-type]
+    assert result == "host_refused"
+    assert asked == ["https://example.com/"], "one refusal is enough"
+
+
+def test_feed_mislabelled_as_html_is_still_found(monkeypatch: pytest.MonkeyPatch) -> None:
+    from eval.ood_collection.collect import find_feed
+
+    rss = (
+        '<?xml version="1.0"?><rss><channel><item><link>https://example.com/a</link>'
+        "<pubDate>Mon, 02 Mar 2026 10:00:00 +0000</pubDate></item></channel></rss>"
+    )
+    _feed_host(
+        monkeypatch,
+        {"https://example.com/": (200, "<html></html>"), "https://example.com/rss": (200, rss)},
+    )
+    result = find_feed("example.com", StubRobots(), FetchSettings())  # type: ignore[arg-type]
+    assert isinstance(result, tuple)
+    assert result[0] == "https://example.com/rss"
+
+
+def test_html_pages_are_not_reported_as_hostile_feeds(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    from eval.ood_collection.collect import find_feed
+
+    _feed_host(monkeypatch, {"https://example.com/": (200, "<html></html>")})
+    result = find_feed("example.com", StubRobots(), FetchSettings())  # type: ignore[arg-type]
+    assert result == "no_feed"
+    assert "declared a DTD" not in caplog.text
+
+
+def test_robots_refusal_is_named_as_such(monkeypatch: pytest.MonkeyPatch) -> None:
+    from eval.ood_collection.collect import find_feed
+
+    asked = _feed_host(monkeypatch, {})
+    result = find_feed("example.com", StubRobots(allow=False), FetchSettings())  # type: ignore[arg-type]
+    assert result == "robots_disallowed"
+    assert asked == []
+
+
+# ------------------------------------------- hosts, outlet names and sitemaps
+
+
+def test_articles_on_the_advertised_feed_host_are_accepted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """dailymail.co.uk advertises a feed whose articles all live on dailymail.com."""
+    from eval.ood_collection import collect as mod
+
+    when = datetime(2026, 3, 1, tzinfo=UTC)
+    entries = [
+        FeedEntry(url="https://www.example.net/a", title="t", published=when),
+        FeedEntry(url="https://unrelated.org/b", title="t", published=when),
+    ]
+
+    def fake_find_feed(
+        domain: str, robots: object, settings: FetchSettings
+    ) -> tuple[str, list[FeedEntry]]:
+        return ("https://www.example.net/rss", entries)
+
+    def fake_fetch(url: str, **kwargs: object) -> FetchResult:
+        return FetchResult(
+            final_url=url, status_code=200, content_type="text/html", text=ARTICLE_HTML
+        )
+
+    monkeypatch.setattr(mod, "find_feed", fake_find_feed)
+    monkeypatch.setattr(mod, "fetch", fake_fetch)
+    rej = Rejection()
+    docs = _collect(rej)
+    assert [d.url for d in docs] == ["https://www.example.net/a"]
+    assert docs[0].domain == "example.com", "grouping stays on the publisher's domain"
+    assert rej.as_dict()["offsite_url"] == 1
+
+
+def test_outlet_names_reach_extraction(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install(monkeypatch, _entries(("https://example.com/a", datetime(2026, 3, 1, tzinfo=UTC))))
+    docs = collect_domain(
+        PUBLISHER,
+        limit=5,
+        robots=StubRobots(),  # type: ignore[arg-type]
+        fetch_settings=FetchSettings(),
+        extract_settings=ExtractSettings(),
+        rejections=Rejection(),
+        outlet_names=["Sentence number"],
+    )
+    assert "Sentence number" not in docs[0].text
+    assert docs[0].markers_removed["outlet_name"] == 14
+
+
+SITEMAP = (
+    '<?xml version="1.0"?>'
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+    'xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">'
+    "<url><loc>https://example.com/politics/edited</loc><lastmod>2026-08-01</lastmod></url>"
+    "<url><loc>https://example.com/politics/new</loc><news:news>"
+    "<news:publication_date>2026-03-02T09:00:00Z</news:publication_date></news:news></url>"
+    "</urlset>"
+)
+
+
+def test_sitemap_is_used_when_no_feed_exists(monkeypatch: pytest.MonkeyPatch) -> None:
+    from eval.ood_collection.collect import find_feed
+
+    _feed_host(
+        monkeypatch,
+        {
+            "https://example.com/": (200, "<html></html>"),
+            "https://example.com/news-sitemap.xml": (200, SITEMAP),
+        },
+    )
+    robots = StubRobots(sitemaps=["https://example.com/news-sitemap.xml"])
+    result = find_feed("example.com", robots, FetchSettings())  # type: ignore[arg-type]
+    assert isinstance(result, tuple)
+    url, entries = result
+    assert url == "https://example.com/news-sitemap.xml"
+    assert entries[0].url == "https://example.com/politics/new", "newest dated entry first"
+    assert entries[0].published == datetime(2026, 3, 2, 9, 0, tzinfo=UTC)
+
+
+def test_lastmod_does_not_count_as_a_publication_date(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An old article edited this year must not pass the snapshot filter."""
+    from eval.ood_collection.collect import find_feed
+
+    _feed_host(
+        monkeypatch,
+        {
+            "https://example.com/": (200, "<html></html>"),
+            "https://example.com/news-sitemap.xml": (200, SITEMAP),
+        },
+    )
+    robots = StubRobots(sitemaps=["https://example.com/news-sitemap.xml"])
+    result = find_feed("example.com", robots, FetchSettings())  # type: ignore[arg-type]
+    assert isinstance(result, tuple)
+    edited = next(e for e in result[1] if e.url.endswith("/edited"))
+    assert edited.published is None

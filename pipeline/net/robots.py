@@ -30,7 +30,7 @@ from urllib.parse import urlsplit
 from pipeline.errors import ProvenanceError
 from pipeline.net.config import FetchSettings
 from pipeline.net.fetch import Resolver, fetch
-from pipeline.net.robots_rules import RuleSet, crawl_delay, parse, path_of
+from pipeline.net.robots_rules import RuleSet, crawl_delay, parse, path_of, sitemap_urls
 
 DEFAULT_MIN_DELAY_S: Final = 2.0
 
@@ -43,6 +43,7 @@ class RobotsPolicy:
     fetched: bool
     delay_s: float
     rules: RuleSet | None = None
+    sitemaps: list[str] = field(default_factory=list)
 
     def allows(self, url: str, user_agent: str) -> bool:
         """Whether this URL may be fetched. Unfetchable robots means no."""
@@ -89,12 +90,22 @@ class RobotsCache:
         rules = parse(response.text, self.settings.user_agent)
         declared = crawl_delay(response.text, self.settings.user_agent)
         delay = max(float(declared or 0.0), self.min_delay_s)
-        policy = RobotsPolicy(host=host, fetched=True, delay_s=delay, rules=rules)
+        policy = RobotsPolicy(
+            host=host,
+            fetched=True,
+            delay_s=delay,
+            rules=rules,
+            sitemaps=sitemap_urls(response.text),
+        )
         self._policies[host] = policy
         return policy
 
     def allows(self, url: str) -> bool:
         return self.policy_for(url).allows(url, self.settings.user_agent)
+
+    def sitemaps_for(self, url: str) -> list[str]:
+        """Sitemaps this host declares in robots.txt. Empty if unfetchable."""
+        return list(self.policy_for(url).sitemaps)
 
     def wait_for(self, url: str) -> None:
         """Block until this host may be contacted again.

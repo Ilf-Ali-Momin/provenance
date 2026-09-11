@@ -24,6 +24,7 @@ asserting that stripping worked.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Final
 
@@ -84,6 +85,64 @@ _BOILERPLATE: Final = re.compile(
 )
 
 
+# Newsletter and subscription promos sitting inside a paragraph rather than on
+# their own line, which the line anchored boilerplate rule cannot see. Measured
+# in the 2026-09-11 pilot: 6 of 10 Vox articles kept one. A promo names a house
+# product, so it is publisher identity.
+#
+# The real shape spans two sentences ("...first featured in the Future Perfect
+# newsletter. Sign up here."), so a single sentence regex requiring both words
+# missed every one. The rule is by adjacency instead: a sentence mentioning a
+# newsletter is removed together with a neighbouring sentence that says sign up
+# or subscribe, or alone when it says both. "Subscribe" without a newsletter
+# nearby is ordinary content and stays.
+_SENTENCE_PART: Final = re.compile(r"[^.!?]+[.!?]*\s*")
+_NEWSLETTER: Final = re.compile(r"\bnewsletters?\b", re.IGNORECASE)
+_SIGNUP: Final = re.compile(r"\b(?:sign\s+up|subscribe)\b", re.IGNORECASE)
+
+
+def strip_newsletter_promos(text: str) -> tuple[str, int]:
+    """Remove promo sentences, returning the text and how many were removed."""
+    lines_out: list[str] = []
+    removed = 0
+    for line in text.split("\n"):
+        parts = _SENTENCE_PART.findall(line) or [line]
+        drop: set[int] = set()
+        for index, part in enumerate(parts):
+            if not _NEWSLETTER.search(part):
+                continue
+            if _SIGNUP.search(part):
+                drop.add(index)
+            for neighbour in (index - 1, index + 1):
+                if 0 <= neighbour < len(parts) and _SIGNUP.search(parts[neighbour]):
+                    drop.update({index, neighbour})
+        if drop:
+            removed += len(drop)
+            line = "".join(p for k, p in enumerate(parts) if k not in drop).rstrip()
+        lines_out.append(line)
+    return "\n".join(lines_out), removed
+
+
+OUTLET_MASK: Final = "[OUTLET]"
+
+
+def mask_outlet_names(text: str, names: Sequence[str]) -> tuple[str, int]:
+    """Replace a publisher's own names with a constant token.
+
+    Only ever called with the names of the publisher whose article this is,
+    so a mention of another outlet is left alone as content. Longest names go
+    first so "Fox News Digital" is masked whole rather than leaving "Digital"
+    behind. Matching is case sensitive on word boundaries; see
+    eval/ood_collection/outlet_names.yaml for why each name is narrow.
+    """
+    total = 0
+    for name in sorted(set(names), key=len, reverse=True):
+        pattern = re.compile(r"(?<![\w.])" + re.escape(name) + r"(?![\w])")
+        text, count = pattern.subn(OUTLET_MASK, text)
+        total += count
+    return text, total
+
+
 @dataclass(frozen=True)
 class ExtractedArticle:
     """Extracted text plus what was removed to get there.
@@ -100,7 +159,9 @@ class ExtractedArticle:
     had_invisible: bool = False
 
 
-def strip_publisher_markers(text: str) -> tuple[str, dict[str, int]]:
+def strip_publisher_markers(
+    text: str, outlet_names: Sequence[str] = ()
+) -> tuple[str, dict[str, int]]:
     """Remove datelines, bylines and residual boilerplate.
 
     Returns the cleaned text and a count of what each rule removed. Applied
@@ -119,6 +180,11 @@ def strip_publisher_markers(text: str) -> tuple[str, dict[str, int]]:
     _count("caps_byline", n)
     text, n = _BOILERPLATE.subn("", text)
     _count("boilerplate", n)
+    text, n = strip_newsletter_promos(text)
+    _count("newsletter_promo", n)
+    if outlet_names:
+        text, n = mask_outlet_names(text, outlet_names)
+        _count("outlet_name", n)
 
     lines = text.split("\n")
     cleaned: list[str] = []
@@ -136,7 +202,11 @@ def strip_publisher_markers(text: str) -> tuple[str, dict[str, int]]:
 
 
 def extract_article(
-    html: str, *, url: str | None = None, settings: ExtractSettings | None = None
+    html: str,
+    *,
+    url: str | None = None,
+    settings: ExtractSettings | None = None,
+    outlet_names: Sequence[str] = (),
 ) -> ExtractedArticle | None:
     """Extract article text from HTML, normalised and publisher stripped.
 
@@ -145,7 +215,6 @@ def extract_article(
     failure rather than retried into a different extractor.
     """
     settings = settings or ExtractSettings()
-    invisible = has_invisible(html)
 
     text = trafilatura.extract(
         html,
@@ -157,9 +226,16 @@ def extract_article(
     if not text:
         return None
 
+    # Measured on the extracted text, before normalisation removes it, not on
+    # the raw page. The 2026-09-11 pilot flagged 24 of 50 documents from raw
+    # HTML, where zero width characters are routine inside scripts and markup,
+    # and 0 of 50 once measured on the text a model would actually receive.
+    # Only the latter says anything about injection or evasion.
+    invisible = has_invisible(text)
+
     meta = trafilatura.extract_metadata(html)
     text = normalise(text)
-    text, removed = strip_publisher_markers(text)
+    text, removed = strip_publisher_markers(text, outlet_names)
     text = normalise(text)  # collapse whatever the removals left behind
 
     # A page with no article still yields its navigation text. Without this

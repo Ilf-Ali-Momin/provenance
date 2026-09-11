@@ -162,3 +162,81 @@ def test_single_word_prefixes_are_not_treated_as_bylines(raw: str) -> None:
     out, removed = strip_publisher_markers(raw)
     assert out.strip() == raw, f"content destroyed: {out!r}"
     assert "caps_byline" not in removed
+
+
+# ------------------------------------------------ outlet names and promotions
+
+from pipeline.text.extract import OUTLET_MASK, mask_outlet_names  # noqa: E402
+
+
+def test_own_outlet_name_is_masked() -> None:
+    text, n = mask_outlet_names(
+        "Fox News Digital reached out for comment. Fox News reported it first.",
+        ["Fox News Digital", "Fox News"],
+    )
+    assert "Fox" not in text
+    assert text.count(OUTLET_MASK) == 2
+    assert n == 2
+
+
+def test_longest_name_is_masked_whole() -> None:
+    """Otherwise "Fox News Digital" leaves "Digital" behind."""
+    text, _ = mask_outlet_names("Fox News Digital said", ["Fox News", "Fox News Digital"])
+    assert text == f"{OUTLET_MASK} said"
+
+
+def test_masking_is_case_sensitive_and_whole_word() -> None:
+    """Narrow names exist so ordinary words survive."""
+    text, n = mask_outlet_names(
+        "The reason is simple: voxel art and a vox pop on Capitol Hill.",
+        ["Reason magazine", "Vox", "The Hill"],
+    )
+    assert n == 0
+    assert "reason" in text and "voxel" in text and "vox pop" in text
+
+
+def test_possessive_is_masked() -> None:
+    text, n = mask_outlet_names("Vox's reporting found", ["Vox"])
+    assert text == f"{OUTLET_MASK}'s reporting found"
+    assert n == 1
+
+
+def test_domain_form_is_masked_without_eating_neighbours() -> None:
+    text, _ = mask_outlet_names("Read more at Reason.com today.", ["Reason.com"])
+    assert text == f"Read more at {OUTLET_MASK} today."
+
+
+def test_mid_paragraph_newsletter_promo_is_removed() -> None:
+    out, removed = strip_publisher_markers(
+        "The vote passed. This story was first featured in the Future Perfect "
+        "newsletter. Sign up here to get it. Officials said more would follow."
+    )
+    assert "newsletter" not in out
+    assert "The vote passed." in out
+    assert "Officials said more would follow." in out
+    assert removed.get("newsletter_promo", 0) >= 1
+
+
+def test_subscribe_without_newsletter_is_content() -> None:
+    raw = "Members were urged to subscribe to the new pension scheme before March."
+    out, removed = strip_publisher_markers(raw)
+    assert out.strip() == raw
+    assert "newsletter_promo" not in removed
+
+
+def test_outlet_masking_counts_are_reported() -> None:
+    _, removed = strip_publisher_markers("The Guardian understands this.", ["The Guardian"])
+    assert removed["outlet_name"] == 1
+
+
+def test_invisible_flag_reads_extracted_text_not_raw_html() -> None:
+    """Raw pages carry zero width characters in scripts; that is not injection."""
+    zwj = chr(0x200D)
+    body = " ".join(f"Sentence {i} of a perfectly ordinary article body." for i in range(16))
+    html = (
+        f"<html><head><script>var s='{zwj}';</script></head>"
+        f"<body><article><h1>Head</h1><p>{body}</p></article></body></html>"
+    )
+    article = extract_article(html)
+    assert article is not None
+    assert article.had_invisible is False

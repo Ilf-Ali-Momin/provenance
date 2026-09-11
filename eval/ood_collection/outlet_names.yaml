@@ -1,0 +1,99 @@
+# How each publisher names itself, for masking self references in its own copy.
+#
+# Why this exists. The pilot run of 2026-09-11 found the outlet's own name
+# still inside the corpus text after every other publisher marker had been
+# stripped: Fox News in 5 of 10 Fox articles, Vox in 4 of 10, the Guardian in
+# 3 of 10. DATA.md requires publisher identity removed from the text before any
+# model sees it, and a self reference ("Fox News Digital has reached out") is
+# publisher identity just as a byline is.
+#
+# Masking applies only inside that publisher's own articles. "Fox News" inside
+# a Guardian article is content about Fox News and stays; "Fox News" inside a
+# Fox article is the outlet naming itself and is replaced with a constant token.
+#
+# These are factual, not opinions: each list is only the names an outlet uses
+# for itself. Matching is case sensitive on whole words, so ordinary words are
+# not caught ("nature", "the hill", "the dispatch"). Names that collide with a
+# common capitalised word or a person are narrowed to a distinctive form, and
+# the narrowing is noted, because an over-eager mask deletes real content:
+#   nature.com      bare "Nature" is sentence initial English; journal forms only
+#   bloomberg.com   bare "Bloomberg" is also Michael Bloomberg; News forms only
+#   reason.com      bare "Reason" is an English word; magazine forms only
+#   thefederalist   bare "Federalist" collides with the Federalist Society
+#   thehill.com     "the Hill" in lower case is Capitol Hill, so only "The Hill"
+#   theatlantic.com "the Atlantic" is the ocean, so only "The Atlantic"
+
+reuters.com: [Thomson Reuters, Reuters]
+apnews.com: [Associated Press, AP News]
+afp.com: [Agence France-Presse, AFP]
+upi.com: [United Press International, UPI]
+
+news.yahoo.com: [Yahoo News, Yahoo]
+msn.com: [MSN]
+news.google.com: [Google News]
+realclearpolitics.com: [RealClearPolitics, RealClear Politics]
+drudgereport.com: [Drudge Report]
+
+chicagotribune.com: [Chicago Tribune, the Tribune]
+dallasnews.com: [The Dallas Morning News, Dallas Morning News]
+seattletimes.com: [The Seattle Times, Seattle Times]
+bostonglobe.com: [The Boston Globe, Boston Globe, the Globe]
+sfchronicle.com: [San Francisco Chronicle, SF Chronicle, the Chronicle]
+denverpost.com: [The Denver Post, Denver Post]
+miamiherald.com: [Miami Herald, the Herald]
+manchestereveningnews.co.uk: [Manchester Evening News]
+liverpoolecho.co.uk: [Liverpool Echo, the ECHO, the Echo]
+
+bbc.com: [BBC News, BBC]
+theguardian.com: [The Guardian, the Guardian, Guardian]
+nytimes.com: [The New York Times, New York Times, the Times]
+wsj.com: [The Wall Street Journal, Wall Street Journal, WSJ, the Journal]
+washingtonpost.com: [The Washington Post, Washington Post, the Post]
+npr.org: [NPR]
+cnn.com: [CNN]
+nbcnews.com: [NBC News]
+cbsnews.com: [CBS News]
+usatoday.com: [USA TODAY, USA Today]
+thehill.com: [The Hill]
+politico.com: [POLITICO, Politico]
+bloomberg.com: [Bloomberg News, Bloomberg Opinion]
+cnbc.com: [CNBC]
+forbes.com: [Forbes]
+statnews.com: [STAT News, STAT]
+sciencedaily.com: [ScienceDaily, Science Daily]
+csmonitor.com: [The Christian Science Monitor, Christian Science Monitor, the Monitor]
+c-span.org: [C-SPAN]
+nature.com: [Springer Nature, Nature Portfolio]
+newscientist.com: [New Scientist]
+axios.com: [Axios]
+pbs.org: [PBS NewsHour, PBS News, PBS]
+aljazeera.com: [Al Jazeera]
+marketwatch.com: [MarketWatch]
+theatlantic.com: [The Atlantic]
+telegraph.co.uk: [The Daily Telegraph, The Telegraph, the Telegraph]
+
+foxnews.com: [Fox News Digital, Fox News Channel, Fox News, FOX News]
+nationalreview.com: [National Review]
+reason.com: [Reason magazine, Reason Foundation, Reason.com, Reason TV]
+washingtonexaminer.com: [Washington Examiner, the Examiner]
+thedispatch.com: [The Dispatch]
+nypost.com: [New York Post, NY Post, The Post]
+spectator.co.uk: [The Spectator]
+nationalpost.com: [National Post]
+dailywire.com: [The Daily Wire, Daily Wire]
+thefederalist.com: [The Federalist]
+dailymail.co.uk: [DailyMail.com, MailOnline, Daily Mail, the Mail]
+newsmax.com: [NEWSMAX, Newsmax]
+breitbart.com: [Breitbart News, Breitbart]
+oann.com: [One America News Network, One America News, OANN, OAN]
+thegatewaypundit.com: [The Gateway Pundit, Gateway Pundit]
+
+motherjones.com: [Mother Jones]
+thedailybeast.com: [The Daily Beast, Daily Beast]
+theintercept.com: [The Intercept]
+jacobin.com: [Jacobin]
+dailykos.com: [Daily Kos]
+vox.com: [Vox Media, Vox.com, Vox]
+slate.com: [Slate]
+infowars.com: [InfoWars, Infowars]
+naturalnews.com: [NaturalNews, Natural News]
