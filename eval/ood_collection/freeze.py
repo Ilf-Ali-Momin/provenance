@@ -157,6 +157,10 @@ def freeze(
     all_records = [r for rs in records.values() for r in rs]
     cells = Counter(f"{r['stratum']}/{r['topic']}" for r in all_records)
     domains_per_split = {name: len({str(r["domain"]) for r in rs}) for name, rs in records.items()}
+    coverage = {
+        stratum: sorted({str(r["split"]) for r in all_records if r["stratum"] == stratum})
+        for stratum in sorted({str(r["stratum"]) for r in all_records})
+    }
     leakage = {str(r["domain"]) for r in records["train"]} & {
         str(r["domain"]) for r in records["dev"] + records["holdout"]
     }
@@ -179,6 +183,13 @@ def freeze(
             "frozen_holdout": len(records["holdout"]),
             "domains_per_split": domains_per_split,
             "domains_in_more_than_one_split": sorted(leakage),
+            # A stratum with fewer than three domains cannot reach every split
+            # under grouping by domain. Named here rather than discovered when
+            # an evaluation finds no wire copy in its holdout.
+            "splits_per_stratum": coverage,
+            "strata_missing_a_split": sorted(
+                s for s, present in coverage.items() if len(present) < 3
+            ),
             "holdout_inspections": [],
         },
         "cells_stratum_topic": dict(sorted(cells.items())),

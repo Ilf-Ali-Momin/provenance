@@ -159,3 +159,13 @@ def test_cli_freezes_a_run_and_refuses_to_overwrite(tmp_path: Path) -> None:
     )
 
     assert freeze_mod.main([str(run_dir), "--out", str(out)]) == 1
+
+
+def test_strata_that_cannot_reach_every_split_are_named() -> None:
+    """One wire publisher cannot be in train, dev and holdout at once."""
+    docs = [doc("wire.com", j, stratum="wire", lean=None) for j in range(4)]
+    docs += [doc(f"r{i}.com", j, stratum="regional", lean=None) for i in range(5) for j in range(2)]
+    _, entry = freeze(docs)
+    splits = entry["splits"]
+    assert splits["strata_missing_a_split"] == ["wire"]  # type: ignore[index]
+    assert splits["splits_per_stratum"]["regional"] == ["dev", "holdout", "train"]  # type: ignore[index]
