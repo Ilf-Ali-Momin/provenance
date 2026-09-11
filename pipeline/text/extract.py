@@ -216,9 +216,15 @@ _AFFILIATE: Final = re.compile(
     r"(?:a\s+)?(?:small\s+)?commission\b",
     re.IGNORECASE,
 )
-_MEMBERSHIP_OR_SPONSOR: Final = re.compile(
-    r"\bmembers?-only\b|^\s*Get\s+(?:the\s+)?[^.!?]{0,60}\bnewsletters?\b",
-    re.IGNORECASE,
+_MEMBERSHIP: Final = re.compile(r"\bmembers?-only\b", re.IGNORECASE)
+# A sponsor line opening "Get the ... newsletter". Applied to the whole line,
+# not per sentence: "Get the U.S. Chamber's free newsletter" contains periods,
+# so the sentence splitter cut it at "U." and a per sentence rule never saw
+# "Get" and "newsletter" together. The span may cross abbreviation periods and
+# must start a line or follow sentence punctuation.
+_SPONSOR_LINE: Final = re.compile(
+    r"(?:^|(?<=[.!?]\s))Get\s+(?:the\s+)?[^!?\n]{0,80}?\bnewsletters?\b[^.!?\n]*[.!?]?\s*",
+    re.MULTILINE,
 )
 
 
@@ -237,6 +243,9 @@ def strip_contact_and_credit_lines(text: str) -> tuple[str, dict[str, int]]:
     text, n = _PHOTO_CREDIT_PAREN.subn("", text)
     if n:
         counts["photo_credit"] = n
+    text, n = _SPONSOR_LINE.subn("", text)
+    if n:
+        counts["membership_or_sponsor"] = n
 
     lines_out: list[str] = []
     for line in text.split("\n"):
@@ -253,7 +262,7 @@ def strip_contact_and_credit_lines(text: str) -> tuple[str, dict[str, int]]:
                 counts["self_promo"] = counts.get("self_promo", 0) + 1
             elif _AFFILIATE.search(part):
                 counts["affiliate_disclosure"] = counts.get("affiliate_disclosure", 0) + 1
-            elif _MEMBERSHIP_OR_SPONSOR.search(part):
+            elif _MEMBERSHIP.search(part):
                 counts["membership_or_sponsor"] = counts.get("membership_or_sponsor", 0) + 1
             else:
                 kept.append(part)
