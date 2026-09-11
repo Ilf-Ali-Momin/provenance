@@ -143,6 +143,82 @@ def mask_outlet_names(text: str, names: Sequence[str]) -> tuple[str, int]:
     return text, total
 
 
+_HTML_LANG: Final = re.compile(
+    r"<html\b[^>]*?\blang\s*=\s*[\"']?([A-Za-z]{2,3}(?:[-_][A-Za-z0-9]+)*)", re.IGNORECASE
+)
+_WORD: Final = re.compile(r"[A-Za-z']+")
+
+# Common English function words. "a" is left out on purpose: it is also a
+# Spanish and Portuguese preposition and would lift the ratio for exactly the
+# languages this check exists to catch.
+_ENGLISH_FUNCTION_WORDS: Final = frozenset(
+    [
+        "the",
+        "of",
+        "and",
+        "to",
+        "in",
+        "that",
+        "is",
+        "was",
+        "for",
+        "on",
+        "it",
+        "with",
+        "as",
+        "he",
+        "she",
+        "they",
+        "his",
+        "her",
+        "their",
+        "be",
+        "by",
+        "at",
+        "this",
+        "have",
+        "from",
+        "or",
+        "had",
+        "not",
+        "are",
+        "but",
+        "an",
+        "were",
+        "which",
+        "would",
+        "will",
+        "has",
+        "been",
+        "said",
+        "who",
+        "its",
+        "we",
+        "you",
+        "there",
+    ]
+)
+
+
+def declared_language(html: str) -> str | None:
+    """The language the page declares on its html element, if any."""
+    match = _HTML_LANG.search(html)
+    return match.group(1) if match else None
+
+
+def english_ratio(text: str, sample: int = 400) -> float:
+    """Share of the first ``sample`` word tokens that are English function words.
+
+    A declaration can be wrong or missing, so the text is checked as well.
+    Digits and punctuation are not tokens here, which keeps a table of numbers
+    from reading as a foreign language.
+    """
+    words = _WORD.findall(text.lower())[:sample]
+    if not words:
+        return 0.0
+    return sum(1 for w in words if w in _ENGLISH_FUNCTION_WORDS) / len(words)
+
+
 @dataclass(frozen=True)
 class ExtractedArticle:
     """Extracted text plus what was removed to get there.
@@ -157,6 +233,8 @@ class ExtractedArticle:
     published: str | None
     removed: dict[str, int] = field(default_factory=dict)
     had_invisible: bool = False
+    declared_language: str | None = None
+    english_ratio: float = 1.0
 
 
 def strip_publisher_markers(
@@ -249,4 +327,6 @@ def extract_article(
         published=meta.date if meta and meta.date else None,
         removed=removed,
         had_invisible=invisible,
+        declared_language=declared_language(html),
+        english_ratio=round(english_ratio(text), 4),
     )

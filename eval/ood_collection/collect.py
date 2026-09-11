@@ -297,9 +297,19 @@ def _entries_from_sitemaps(
                 url=e.url,
                 title=None,
                 published=e.published if e.date_source == "publication_date" else None,
+                language=e.language,
             )
             for e in entries
         ]
+        # A sitemap whose entries all declare another language is a service in
+        # that language: bbc.com lists BBC Mundo first, in Spanish. Move on to
+        # the next declared sitemap rather than returning one that can only be
+        # rejected, which left BBC yielding nothing once the gate existed.
+        english = [e for e in feed_entries if not e.language or e.language.lower().startswith("en")]
+        if feed_entries and not english:
+            logger.info("%s: sitemap %s is not English, trying the next", domain, sitemap_url)
+            continue
+        feed_entries = english
         if feed_entries:
             # Newest first, undated last, so the per publisher limit is spent on
             # articles that can pass the snapshot filter.
@@ -358,6 +368,11 @@ def collect_domain(
         if entry.published < snapshot:
             rejections.record("before_snapshot")
             continue
+        # English only (BRIEF.md). A declared non-English entry is skipped
+        # before any request is made for it.
+        if entry.language and not entry.language.lower().startswith("en"):
+            rejections.record("non_english")
+            continue
         if not robots.allows(entry.url):
             rejections.record("robots_disallowed")
             continue
@@ -388,6 +403,14 @@ def collect_domain(
         )
         if article is None:
             rejections.record("extraction_failed")
+            continue
+        declared = (article.declared_language or "").lower()
+        if (declared and not declared.startswith("en")) or (
+            article.english_ratio < extract_settings.min_english_stopword_ratio
+        ):
+            # Checked on the page as well as the listing, because most
+            # listings declare no language and some declarations are wrong.
+            rejections.record("non_english")
             continue
 
         documents.append(

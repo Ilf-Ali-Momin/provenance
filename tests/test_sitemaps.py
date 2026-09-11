@@ -100,3 +100,16 @@ def test_sitemap_lines_are_read_from_robots() -> None:
 def test_sitemap_lines_are_deduplicated() -> None:
     body = "Sitemap: https://e.com/s.xml\nSitemap: https://e.com/s.xml\n"
     assert sitemap_urls(body) == ["https://e.com/s.xml"]
+
+
+def test_news_language_is_captured() -> None:
+    xml = (
+        '<?xml version="1.0"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+        'xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">'
+        "<url><loc>https://e.com/mundo/a</loc><news:news><news:publication>"
+        "<news:name>E</news:name><news:language>es</news:language></news:publication>"
+        "<news:publication_date>2026-03-02T09:00:00Z</news:publication_date>"
+        "</news:news></url></urlset>"
+    )
+    assert parse_sitemap(xml).entries[0].language == "es"

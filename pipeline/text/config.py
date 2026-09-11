@@ -19,3 +19,10 @@ class ExtractSettings(BaseSettings):
     # publisher stripping is far longer than this; the floor is deliberately
     # low so it removes non articles rather than short articles.
     min_article_chars: int = Field(default=400, gt=0)
+
+    # English only (BRIEF.md scope). The share of a document's opening tokens
+    # that are common English function words. English news prose sits well
+    # above this and Spanish, French or Arabic well below. Measured need: the
+    # 2026-09-11 pilot took ten BBC Mundo articles, in Spanish, through a news
+    # sitemap, and nothing downstream noticed.
+    min_english_stopword_ratio: float = Field(default=0.15, ge=0, le=1)

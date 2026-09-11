@@ -69,6 +69,9 @@ class FeedEntry:
     url: str
     title: str | None
     published: datetime | None
+    # Declared language, where the listing states one (news sitemaps do). Lets
+    # a non-English entry be skipped before any request is made for it.
+    language: str | None = None
 
 
 class UnsafeFeedError(ValueError):

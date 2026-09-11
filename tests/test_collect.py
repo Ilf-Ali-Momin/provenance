@@ -411,3 +411,102 @@ def test_lastmod_does_not_count_as_a_publication_date(monkeypatch: pytest.Monkey
     assert isinstance(result, tuple)
     edited = next(e for e in result[1] if e.url.endswith("/edited"))
     assert edited.published is None
+
+
+# ------------------------------------------------------------------ language
+
+SPANISH_BODY = " ".join(
+    "El consejo dijo que votaría el presupuesto en marzo y los funcionarios no se "
+    "sorprendieron por la decisión tomada durante la sesión extraordinaria."
+    for _ in range(6)
+)
+
+
+def _language_run(
+    monkeypatch: pytest.MonkeyPatch, entry: FeedEntry, html: str
+) -> tuple[list[Document], Rejection, list[str]]:
+    from eval.ood_collection import collect as mod
+
+    fetched: list[str] = []
+
+    def fake_find_feed(
+        domain: str, robots: object, settings: FetchSettings
+    ) -> tuple[str, list[FeedEntry]]:
+        return ("https://example.com/news-sitemap.xml", [entry])
+
+    def fake_fetch(url: str, **kwargs: object) -> FetchResult:
+        fetched.append(url)
+        return FetchResult(final_url=url, status_code=200, content_type="text/html", text=html)
+
+    monkeypatch.setattr(mod, "find_feed", fake_find_feed)
+    monkeypatch.setattr(mod, "fetch", fake_fetch)
+    rej = Rejection()
+    return _collect(rej), rej, fetched
+
+
+def test_declared_non_english_entry_is_skipped_before_fetching(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """BBC Mundo reached the pilot through a news sitemap that declared es."""
+    entry = FeedEntry(
+        url="https://example.com/mundo/a",
+        title=None,
+        published=datetime(2026, 3, 1, tzinfo=UTC),
+        language="es",
+    )
+    docs, rej, fetched = _language_run(monkeypatch, entry, ARTICLE_HTML)
+    assert docs == []
+    assert rej.as_dict()["non_english"] == 1
+    assert fetched == [], "no request for an article that will be discarded"
+
+
+def test_page_declaring_another_language_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    entry = FeedEntry(
+        url="https://example.com/a", title=None, published=datetime(2026, 3, 1, tzinfo=UTC)
+    )
+    html = f'<html lang="es"><body><article><p>{SPANISH_BODY}</p></article></body></html>'
+    docs, rej, _ = _language_run(monkeypatch, entry, html)
+    assert docs == []
+    assert rej.as_dict()["non_english"] == 1
+
+
+def test_mislabelled_page_is_caught_by_the_text(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A page can claim en and still be Spanish."""
+    entry = FeedEntry(
+        url="https://example.com/a", title=None, published=datetime(2026, 3, 1, tzinfo=UTC)
+    )
+    html = f'<html lang="en"><body><article><p>{SPANISH_BODY}</p></article></body></html>'
+    docs, rej, _ = _language_run(monkeypatch, entry, html)
+    assert docs == []
+    assert rej.as_dict()["non_english"] == 1
+
+
+def test_non_english_sitemap_is_passed_over_for_the_next(monkeypatch: pytest.MonkeyPatch) -> None:
+    from eval.ood_collection.collect import find_feed
+
+    def news(url: str, lang: str) -> str:
+        return (
+            '<?xml version="1.0"?>'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+            'xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">'
+            f"<url><loc>{url}</loc><news:news><news:publication><news:name>E</news:name>"
+            f"<news:language>{lang}</news:language></news:publication>"
+            "<news:publication_date>2026-03-02T09:00:00Z</news:publication_date>"
+            "</news:news></url></urlset>"
+        )
+
+    mundo = "https://example.com/mundo-news.xml"
+    english = "https://example.com/english-news.xml"
+    _feed_host(
+        monkeypatch,
+        {
+            "https://example.com/": (200, "<html></html>"),
+            mundo: (200, news("https://example.com/mundo/a", "es")),
+            english: (200, news("https://example.com/news/a", "en")),
+        },
+    )
+    robots = StubRobots(sitemaps=[mundo, english])
+    result = find_feed("example.com", robots, FetchSettings())  # type: ignore[arg-type]
+    assert isinstance(result, tuple)
+    assert result[0] == english
+    assert [e.url for e in result[1]] == ["https://example.com/news/a"]

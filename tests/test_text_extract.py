@@ -240,3 +240,42 @@ def test_invisible_flag_reads_extracted_text_not_raw_html() -> None:
     article = extract_article(html)
     assert article is not None
     assert article.had_invisible is False
+
+
+# ------------------------------------------------------------------ language
+
+from pipeline.text.extract import declared_language, english_ratio  # noqa: E402
+
+SPANISH = (
+    "El consejo dijo que votaría el presupuesto en marzo y los funcionarios no se "
+    "sorprendieron por la decisión tomada durante la sesión extraordinaria del lunes."
+)
+ENGLISH = (
+    "The council said that it would vote on the budget in March, and officials were "
+    "not surprised by the decision that was taken at the special session on Monday."
+)
+
+
+def test_declared_language_is_read_from_the_html_element() -> None:
+    assert declared_language('<html class="x" lang="es-419"><body>') == "es-419"
+    assert declared_language("<html><body>") is None
+
+
+def test_english_ratio_separates_english_from_spanish() -> None:
+    assert english_ratio(ENGLISH) > 0.3
+    assert english_ratio(SPANISH) < 0.1
+
+
+def test_numbers_do_not_read_as_foreign() -> None:
+    assert english_ratio("") == 0.0
+    assert english_ratio("The rate was 4.5 percent in 2026, and it is rising.") > 0.3
+
+
+def test_extracted_article_carries_language_signals() -> None:
+    body = " ".join(ENGLISH for _ in range(6))
+    article = extract_article(
+        f'<html lang="en-GB"><body><article><p>{body}</p></article></body></html>'
+    )
+    assert article is not None
+    assert article.declared_language == "en-GB"
+    assert article.english_ratio > 0.3

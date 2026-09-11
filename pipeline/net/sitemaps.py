@@ -38,6 +38,7 @@ class SitemapEntry:
     url: str
     published: datetime | None
     date_source: str | None  # "publication_date", "lastmod", or None
+    language: str | None = None  # news:language, when declared
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,7 @@ def parse_sitemap(xml_text: str) -> Sitemap:
         loc: str | None = None
         lastmod: str | None = None
         publication: str | None = None
+        language: str | None = None
         for element in node.iter():
             local = _local(element.tag)
             text = (element.text or "").strip()
@@ -89,6 +91,8 @@ def parse_sitemap(xml_text: str) -> Sitemap:
                 lastmod = text
             elif local == "publication_date" and text:
                 publication = text
+            elif local == "language" and text:
+                language = text
         if not loc:
             continue
         if kind == "sitemapindex" and name == "sitemap":
@@ -99,7 +103,9 @@ def parse_sitemap(xml_text: str) -> Sitemap:
             if published is None:
                 published = _parse_date(lastmod)
                 source = "lastmod" if published else None
-            entries.append(SitemapEntry(url=loc, published=published, date_source=source))
+            entries.append(
+                SitemapEntry(url=loc, published=published, date_source=source, language=language)
+            )
 
     return Sitemap(entries=entries, children=children)
 
