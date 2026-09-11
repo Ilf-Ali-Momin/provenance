@@ -219,3 +219,78 @@ corpora:
       canonical class counts exactly, because this mirror retains the subject
       and date columns that expose further leakage channels.
 
+  - id: ood_suite_2026
+    name: Out of distribution evaluation suite, 2026
+    role: ood_suite
+    purpose: Frozen English news articles published after the training snapshot, stratified
+      by publisher type, for out of distribution evaluation only.
+    source_url: eval/ood_collection/sources.yaml
+    access_date: '2026-09-11'
+    snapshot_date: '2026-01-01'
+    publisher: many; see sources.yaml and the document records
+    licence: publisher copyright; not licensed for redistribution
+    licence_url: per publisher
+    redistribution: prohibited
+    terms_notes: Collected through publisher feeds and sitemaps, robots.txt honoured on every
+      request, refusals recorded and never worked around (D019).
+    training_use: prohibited
+    training_use_reason: Evaluation only. Never a training source (DATA.md, D009).
+    evaluation_use: permitted
+    checked_in: false
+    retrieval:
+      method: download_script
+      script: eval/ood_collection/run.py
+      notes: Rerunning collects a different corpus; the frozen files are the suite.
+    storage:
+      location: data/ood/frozen on a FileVault encrypted local disk
+      region: 'OPEN OBLIGATION: not the EU region SECURITY.md control 6 requires'
+      encrypted_at_rest: true
+    record_count: 384
+    sha256: 9c59a053dfdd2214c2fe8d7749adb19aa6f4127510aaafbbb0d99676175c4a24
+    frozen: true
+    frozen_at: '2026-09-11T20:52:09.010531+00:00'
+    splits:
+      method: grouped_by_domain
+      seed: 20260101
+      train: 219
+      dev: 93
+      frozen_holdout: 72
+      domains_per_split:
+        train: 18
+        dev: 7
+        holdout: 6
+      domains_in_more_than_one_split: []
+      splits_per_stratum:
+        national:
+        - dev
+        - holdout
+        - train
+        partisan:
+        - dev
+        - holdout
+        - train
+        regional:
+        - dev
+        - holdout
+        - train
+        wire:
+        - train
+      strata_missing_a_split:
+      - wire
+      holdout_inspections: []
+    personal_data:
+      contains: true
+      lawful_basis: legitimate interest, research
+      balancing_test: 'OPEN OBLIGATION: not yet written'
+      retention: Held for the evaluation; deletion procedure not yet implemented.
+    normalisation:
+      extraction_pipeline: 2fbca13+reclean:3489893
+      identical_across_strata: true
+      publisher_markers_stripped: true
+      notes: Datelines, bylines, boilerplate, newsletter promotions, own outlet names and self
+        disclosures removed per D018; English only per D020.
+    notes: '{"duplicates_removed": 1, "partisan_balance": {"per_side": 127, "dropped_for_balance":
+      35}, "topic_unknown_rate": 0.8802, "cells_stratum_topic": {"national/business": 1, "national/unknown":
+      39, "partisan/business": 5, "partisan/health": 2, "partisan/politics": 26, "partisan/science":
+      1, "partisan/unknown": 220, "regional/business": 7, "regional/health": 2, "regional/politics":
+      2, "regional/unknown": 64, "wire/unknown": 15}}'
