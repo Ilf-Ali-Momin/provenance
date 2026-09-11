@@ -22,6 +22,20 @@ dependencies = [
   "trafilatura>=2.0",
 ]
 
+[project.optional-dependencies]
+# The M0 leakage ablations (eval/leakage/) and the OOD residual check import
+# these. They were installed and used from the start of M0 but never declared,
+# so a fresh clone could not rerun the milestone's measurements. Declared as an
+# optional group because serving never loads them: the model container runs
+# ONNX Runtime on CPU (ARCHITECTURE.md), not torch.
+ml = [
+  "scikit-learn>=1.9",
+  "numpy>=2.5",
+  "torch>=2.13",
+  "transformers>=5.16",
+  "datasets>=5.0",
+]
+
 [dependency-groups]
 # Tooling only at M0. Runtime dependencies arrive with the components that need
 # them, per milestone. Pinning with hashes happens in the lockfile (RULES.md,
