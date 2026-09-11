@@ -385,3 +385,61 @@ def test_email_in_reporting_is_masked_not_dropped() -> None:
     out, removed = strip_publisher_markers("Tips can be sent to tips@example.org by Friday.")
     assert out.strip() == f"Tips can be sent to {EMAIL_MASK} by Friday."
     assert removed["email_address"] == 1
+
+
+# ----------------------------------- self promotion, affiliate and membership
+
+
+def test_reach_directly_form_of_contact_is_removed() -> None:
+    out, removed = strip_publisher_markers("The vote passed. Reach him directly at the desk.")
+    assert out.strip() == "The vote passed."
+    assert removed["follow_or_contact"] == 1
+
+
+def test_self_promotion_keyed_on_the_mask_is_removed() -> None:
+    raw = "The range day went ahead. You can sign up to get Down Range at Breitbart News."
+    out, removed = strip_publisher_markers(raw, ["Breitbart News"])
+    assert out.strip() == "The range day went ahead."
+    assert removed["self_promo"] == 1
+
+
+def test_sign_up_without_the_outlet_is_content() -> None:
+    raw = "Residents can sign up for the council's flood alerts online."
+    out, removed = strip_publisher_markers(raw)
+    assert out.strip() == raw
+    assert "self_promo" not in removed
+
+
+def test_affiliate_disclosure_and_support_line_are_removed() -> None:
+    raw = (
+        "The novel is long. When you buy a book using a link in this newsletter, we "
+        "receive a commission. Thank you for supporting The Atlantic."
+    )
+    out, removed = strip_publisher_markers(raw, ["The Atlantic"])
+    assert out.strip() == "The novel is long."
+    assert removed["affiliate_disclosure"] == 1
+    assert removed["self_promo"] == 1
+
+
+def test_membership_and_sponsor_lines_are_removed() -> None:
+    raw = (
+        "Rates held steady. Get the U.S. Chamber's free newsletter for insights on the economy. "
+        "Members get access to all of our articles, members-only newsletters, and podcasts."
+    )
+    out, removed = strip_publisher_markers(raw)
+    assert out.strip() == "Rates held steady."
+    assert removed["membership_or_sponsor"] == 2
+
+
+def test_ordinary_uses_of_get_and_members_are_content() -> None:
+    raw = "Get the facts before you vote. The union said members only voted once."
+    out, removed = strip_publisher_markers(raw)
+    assert out.strip() == raw
+    assert "membership_or_sponsor" not in removed
+
+
+def test_domain_inside_an_email_address_is_not_masked() -> None:
+    """The address is handled as personal data, not mangled into a half mask."""
+    text, n = mask_outlet_names("write to jklein@breitbart.com today", ["breitbart.com"])
+    assert n == 0
+    assert text == "write to jklein@breitbart.com today"

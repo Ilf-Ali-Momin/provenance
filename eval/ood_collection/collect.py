@@ -324,7 +324,14 @@ def _entries_from_sitemaps(
 def load_outlet_names(path: Path = OUTLET_NAMES) -> dict[str, tuple[str, ...]]:
     """How each publisher names itself, for masking in its own copy."""
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    return {str(domain): tuple(str(n) for n in names) for domain, names in data.items()}
+    # The bare domain is always a self name as well. The re-cleaned full run
+    # still had "breitbart.com/downrange" in Breitbart copy after every listed
+    # name was masked. Matched case sensitively like the rest, which is the
+    # lower case form publishers print in URLs.
+    return {
+        str(domain): tuple(dict.fromkeys([*(str(n) for n in names), str(domain)]))
+        for domain, names in data.items()
+    }
 
 
 def collect_domain(

@@ -181,7 +181,7 @@ MAX_DENIAL_SENTENCE: Final = 90
 # personal data this corpus has no reason to hold.
 _FOLLOW_OR_CONTACT: Final = re.compile(
     r"\b(?:follow\s+(?:us|him|her|them)\s+on"
-    r"|(?:e-?mail|contact|reach)\s+(?:him|her|them|the\s+author)\s+at)\b",
+    r"|(?:e-?mail|contact|reach)\s+(?:him|her|them|the\s+author)\s+(?:directly\s+)?at)\b",
     re.IGNORECASE,
 )
 _CONTRIBUTOR_CREDIT: Final = re.compile(
@@ -202,6 +202,24 @@ _PHOTO_CREDIT_PAREN: Final = re.compile(
     re.IGNORECASE,
 )
 EMAIL_MASK: Final = "[EMAIL]"
+
+# Self promotion and commerce boilerplate, from the re-cleaned full run audit:
+# "You can sign up to get Down Range at [OUTLET]/downrange" (Breitbart), "When
+# you buy a book using a link in this newsletter, we receive a commission.
+# Thank you for supporting [OUTLET]" (The Atlantic), and "access to all of our
+# articles, members-only newsletters" plus a sponsor's "Get the U.S. Chamber's
+# free newsletter" (The Dispatch). Promotion and support lines are keyed on the
+# outlet mask so they only fire where the publisher names itself.
+_SUPPORT_OUTLET: Final = re.compile(r"\bsupport(?:ing)?\s+" + re.escape("[OUTLET]"), re.IGNORECASE)
+_AFFILIATE: Final = re.compile(
+    r"\b(?:we|" + re.escape("[OUTLET]") + r")\s+(?:may\s+)?(?:receive|earn|get)\s+"
+    r"(?:a\s+)?(?:small\s+)?commission\b",
+    re.IGNORECASE,
+)
+_MEMBERSHIP_OR_SPONSOR: Final = re.compile(
+    r"\bmembers?-only\b|^\s*Get\s+(?:the\s+)?[^.!?]{0,60}\bnewsletters?\b",
+    re.IGNORECASE,
+)
 
 
 def strip_contact_and_credit_lines(text: str) -> tuple[str, dict[str, int]]:
@@ -231,6 +249,12 @@ def strip_contact_and_credit_lines(text: str) -> tuple[str, dict[str, int]]:
                 counts["contributor_credit"] = counts.get("contributor_credit", 0) + 1
             elif _STAFF_BIO.search(part):
                 counts["staff_bio"] = counts.get("staff_bio", 0) + 1
+            elif OUTLET_MASK in part and (_SIGNUP.search(part) or _SUPPORT_OUTLET.search(part)):
+                counts["self_promo"] = counts.get("self_promo", 0) + 1
+            elif _AFFILIATE.search(part):
+                counts["affiliate_disclosure"] = counts.get("affiliate_disclosure", 0) + 1
+            elif _MEMBERSHIP_OR_SPONSOR.search(part):
+                counts["membership_or_sponsor"] = counts.get("membership_or_sponsor", 0) + 1
             else:
                 kept.append(part)
         lines_out.append("".join(kept).rstrip() if len(kept) != len(parts) else line)
@@ -275,7 +299,7 @@ def mask_outlet_names(text: str, names: Sequence[str]) -> tuple[str, int]:
     """
     total = 0
     for name in sorted(set(names), key=len, reverse=True):
-        pattern = re.compile(r"(?<![\w.])" + re.escape(name) + r"(?![\w])")
+        pattern = re.compile(r"(?<![\w.@])" + re.escape(name) + r"(?![\w])")
         text, count = pattern.subn(OUTLET_MASK, text)
         total += count
     return text, total

@@ -510,3 +510,12 @@ def test_non_english_sitemap_is_passed_over_for_the_next(monkeypatch: pytest.Mon
     assert isinstance(result, tuple)
     assert result[0] == english
     assert [e.url for e in result[1]] == ["https://example.com/news/a"]
+
+
+def test_publisher_domain_is_always_a_self_name() -> None:
+    from eval.ood_collection.collect import load_outlet_names
+
+    names = load_outlet_names()
+    assert names["breitbart.com"][0] == "Breitbart News", "listed names keep their order"
+    assert "breitbart.com" in names["breitbart.com"]
+    assert names["vox.com"].count("vox.com") == 1
