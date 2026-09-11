@@ -23,9 +23,11 @@ every stratum with three or more domains has a domain in every split.
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import random
+import sys
 from collections import Counter, defaultdict
 from dataclasses import asdict, replace
 from datetime import UTC, datetime
@@ -34,6 +36,7 @@ from typing import Final
 from urllib.parse import urlsplit
 
 from eval.ood_collection.collect import SNAPSHOT_DATE, Document
+from eval.ood_collection.run import load_documents
 
 TOPICS: Final[dict[str, tuple[str, ...]]] = {
     "politics": ("politics", "election", "elections", "government", "congress", "white-house"),
@@ -200,3 +203,37 @@ def write_frozen(
             for row in rows:
                 handle.write(json.dumps(row, ensure_ascii=False) + "\n")
     (out / "manifest_entry.json").write_text(json.dumps(entry, indent=2) + "\n", encoding="utf-8")
+
+
+DEFAULT_FROZEN: Final = Path("data/ood/frozen")
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Freeze one collection run. Refuses to overwrite an existing freeze.
+
+    The collection plan says a frozen suite does not change, and D009 limits
+    the holdout to two inspections. Overwriting a freeze would silently reset
+    both, so a second freeze into the same directory is an error rather than
+    an update; a corrected corpus is a new directory and a new manifest entry.
+    """
+    parser = argparse.ArgumentParser(description="Freeze a collected OOD corpus.")
+    parser.add_argument("corpus", type=Path, help="collection run directory")
+    parser.add_argument("--out", type=Path, default=DEFAULT_FROZEN)
+    parser.add_argument("--seed", type=int, default=SEED)
+    args = parser.parse_args(argv)
+
+    if (args.out / "manifest_entry.json").exists():
+        sys.stderr.write(f"refusing to overwrite the frozen corpus at {args.out}\n")
+        return 1
+
+    records, entry = freeze(load_documents(args.corpus), args.seed)
+    sha_file = args.corpus / "pipeline_sha.txt"
+    entry["extraction_pipeline"] = sha_file.read_text().strip() if sha_file.exists() else None
+    entry["source_run"] = str(args.corpus)
+    write_frozen(records, entry, args.out)
+    sys.stdout.write(json.dumps(entry, indent=2) + "\n")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

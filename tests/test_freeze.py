@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import random
+from pathlib import Path
 
 import pytest
 from eval.ood_collection.collect import Document
@@ -132,3 +134,28 @@ def test_freeze_reports_no_domain_crossing_splits() -> None:
     assert entry["training_use"] == "prohibited"
     assert entry["splits"]["holdout_inspections"] == []  # type: ignore[index]
     assert "regional/health" in entry["cells_stratum_topic"]  # type: ignore[operator]
+
+
+def test_cli_freezes_a_run_and_refuses_to_overwrite(tmp_path: Path) -> None:
+    """A frozen suite does not change; a second freeze must fail, not update."""
+    from eval.ood_collection import freeze as freeze_mod
+    from eval.ood_collection.collect import Rejection
+    from eval.ood_collection.run import record_domain
+
+    run_dir = tmp_path / "run"
+    for i in range(6):
+        domain = f"p{i}.com"
+        lean = "left" if i % 2 else "right"
+        record_domain(run_dir, domain, [doc(domain, j, lean=lean) for j in range(3)], Rejection())
+    (run_dir / "pipeline_sha.txt").write_text("abc1234\n")
+    out = tmp_path / "frozen"
+
+    assert freeze_mod.main([str(run_dir), "--out", str(out)]) == 0
+    entry = json.loads((out / "manifest_entry.json").read_text())
+    assert entry["extraction_pipeline"] == "abc1234"
+    assert entry["record_count"] == sum(
+        len((out / f"{name}.jsonl").read_text().splitlines())
+        for name in ("train", "dev", "holdout")
+    )
+
+    assert freeze_mod.main([str(run_dir), "--out", str(out)]) == 1
