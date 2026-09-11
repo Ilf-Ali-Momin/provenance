@@ -38,11 +38,32 @@ RESIDUE: Final[dict[str, re.Pattern[str]]] = {
     "by_line": re.compile(r"^\s*By\s+[A-Z][a-z]+", re.MULTILINE),
     "caps_name_colon": re.compile(r"^[A-Z][A-Z'-]+(?:\s+[A-Z][A-Z'-]+){1,3}:\s", re.MULTILINE),
     "wire_tag": re.compile(r"\((?:AP|Reuters|AFP|CNN|UPI|Bloomberg)\)"),
-    "photo_credit": re.compile(r"\b(?:Photo|Image|Illustration)\s*(?::|by\b|credit\b)", re.I),
+    # Capitalised label then a capitalised name. The looser first version flagged
+    # "the same image: a World Trade Center tower", which is prose.
+    "photo_credit": re.compile(
+        r"\b(?:Photo|Photograph|Image|Illustration)(?:\s+credit)?\s*(?::|by)\s*[A-Z][a-z]+"
+    ),
     "newsletter": re.compile(r"\bnewsletters?\b", re.I),
     "follow_us": re.compile(r"\bfollow (?:us|@\w+)\b", re.I),
-    "copyright": re.compile(r"(?:©|\(c\)\s*\d{4}|\bcopyright\b)", re.I),
+    # A notice, not the word. The first version flagged "sued OpenAI for
+    # copyright violations", which is reporting.
+    "copyright": re.compile(
+        r"©|\(c\)\s*\d{4}|\bCopyright\s+(?:©\s*)?\d{4}\b|\ball rights reserved\b", re.I
+    ),
 }
+
+
+def _name_pattern(name: str) -> re.Pattern[str]:
+    """Case insensitive, except where that turns a name into an English phrase.
+
+    "the Globe" searched case insensitively matches "around the globe", which
+    the first run flagged. For a name that is "the" plus one noun, only the
+    article's case is relaxed and the noun keeps its capital.
+    """
+    words = name.split()
+    if len(words) == 2 and words[0].lower() == "the":
+        return re.compile(r"(?<![\w.])(?i:the)\s+" + re.escape(words[1]) + r"(?![\w])")
+    return re.compile(r"(?<![\w.])" + re.escape(name) + r"(?![\w])", re.IGNORECASE)
 
 
 def _snippet(text: str, start: int) -> str:
@@ -63,10 +84,7 @@ def audit(documents: list[Document], outlet_names: dict[str, tuple[str, ...]]) -
         hits: Counter[str] = Counter()
         snippets: dict[str, list[str]] = defaultdict(list)
         masked: Counter[str] = Counter()
-        name_patterns = [
-            re.compile(r"(?<![\w.])" + re.escape(n) + r"(?![\w])", re.IGNORECASE)
-            for n in outlet_names.get(domain, ())
-        ]
+        name_patterns = [_name_pattern(n) for n in outlet_names.get(domain, ())]
 
         for doc in docs:
             masked.update(doc.markers_removed)

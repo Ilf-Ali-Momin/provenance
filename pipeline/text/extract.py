@@ -101,6 +101,38 @@ _NEWSLETTER: Final = re.compile(r"\bnewsletters?\b", re.IGNORECASE)
 _SIGNUP: Final = re.compile(r"\b(?:sign\s+up|subscribe)\b", re.IGNORECASE)
 
 
+# A named newsletter widget on its own line: "The Reason Roundup Newsletter by
+# Liz Wolfe Liz and Reason help you make sense of the day's news". Measured in
+# the second pilot, where it carried the brand and a staff name into the corpus
+# with no "sign up" nearby for the promo rule to key on. A named newsletter in
+# ordinary prose ("officials cited the Parish Council Newsletter") has no
+# widget cue and stays; the line must also be short and carry a byline, a
+# sign-up verb, or delivery language.
+_NAMED_NEWSLETTER: Final = re.compile(r"\b(?:[A-Z][\w'\u2019]+\s+){1,4}Newsletters?\b")
+_WIDGET_CUE: Final = re.compile(
+    r"\bby\s+[A-Z][a-z]+\s+[A-Z][a-z]+|\b(?:sign\s+up|subscribe|inbox|delivered|every\s+"
+    r"(?:morning|day|week|weekday))\b",
+    re.IGNORECASE,
+)
+MAX_WIDGET_LINE: Final = 300
+
+
+def strip_newsletter_widgets(text: str) -> tuple[str, int]:
+    """Drop short lines that are a named newsletter widget."""
+    kept: list[str] = []
+    removed = 0
+    for line in text.split("\n"):
+        if (
+            len(line) < MAX_WIDGET_LINE
+            and _NAMED_NEWSLETTER.search(line)
+            and _WIDGET_CUE.search(line)
+        ):
+            removed += 1
+            continue
+        kept.append(line)
+    return "\n".join(kept), removed
+
+
 def strip_newsletter_promos(text: str) -> tuple[str, int]:
     """Remove promo sentences, returning the text and how many were removed."""
     lines_out: list[str] = []
@@ -124,6 +156,47 @@ def strip_newsletter_promos(text: str) -> tuple[str, int]:
 
 
 OUTLET_MASK: Final = "[OUTLET]"
+
+# A disclosure about the outlet itself, recognisable once its name is masked:
+# "The Center for Investigative Reporting, the parent company of [OUTLET], has
+# sued OpenAI for copyright violations. OpenAI denies the allegations." Measured
+# in the second pilot, repeated verbatim across Mother Jones articles. Masking
+# removed the name but the recurring paragraph is itself a house signature.
+# Keyed on the mask token, so it only ever fires on a sentence where this
+# publisher was naming itself; "Amazon is owned by its shareholders" is untouched.
+_SELF_DISCLOSURE_CUE: Final = re.compile(
+    r"\b(?:parent company|owned by|disclosure|funded by|affiliated with|partner(?:ship)? with)\b",
+    re.IGNORECASE,
+)
+_DENIAL: Final = re.compile(r"\b(?:denies|has denied|disputes|rejects)\b", re.IGNORECASE)
+MAX_DENIAL_SENTENCE: Final = 90
+
+
+def strip_self_disclosures(text: str) -> tuple[str, int]:
+    """Remove disclosure sentences naming the masked outlet, and a short denial after."""
+    lines_out: list[str] = []
+    removed = 0
+    for line in text.split("\n"):
+        if OUTLET_MASK not in line:
+            lines_out.append(line)
+            continue
+        parts = _SENTENCE_PART.findall(line) or [line]
+        drop: set[int] = set()
+        for index, part in enumerate(parts):
+            if OUTLET_MASK in part and _SELF_DISCLOSURE_CUE.search(part):
+                drop.add(index)
+                follower = index + 1
+                if (
+                    follower < len(parts)
+                    and len(parts[follower]) <= MAX_DENIAL_SENTENCE
+                    and _DENIAL.search(parts[follower])
+                ):
+                    drop.add(follower)
+        if drop:
+            removed += len(drop)
+            line = "".join(p for k, p in enumerate(parts) if k not in drop).rstrip()
+        lines_out.append(line)
+    return "\n".join(lines_out), removed
 
 
 def mask_outlet_names(text: str, names: Sequence[str]) -> tuple[str, int]:
@@ -260,9 +333,13 @@ def strip_publisher_markers(
     _count("boilerplate", n)
     text, n = strip_newsletter_promos(text)
     _count("newsletter_promo", n)
+    text, n = strip_newsletter_widgets(text)
+    _count("newsletter_promo", n)
     if outlet_names:
         text, n = mask_outlet_names(text, outlet_names)
         _count("outlet_name", n)
+        text, n = strip_self_disclosures(text)
+        _count("self_disclosure", n)
 
     lines = text.split("\n")
     cleaned: list[str] = []

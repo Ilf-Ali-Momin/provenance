@@ -279,3 +279,47 @@ def test_extracted_article_carries_language_signals() -> None:
     assert article is not None
     assert article.declared_language == "en-GB"
     assert article.english_ratio > 0.3
+
+
+# --------------------------------------------- widgets and self disclosures
+
+
+def test_named_newsletter_widget_line_is_removed() -> None:
+    """Measured in pilot 2: the brand and a staff name rode in on this line."""
+    raw = (
+        "The committee met on Tuesday.\n"
+        "The Reason Roundup Newsletter by Liz Wolfe Liz and Reason help you make sense "
+        "of the day's news every morning.\n"
+        "Officials said more would follow."
+    )
+    out, removed = strip_publisher_markers(raw)
+    assert "Roundup" not in out and "Liz Wolfe" not in out
+    assert "The committee met on Tuesday." in out
+    assert "Officials said more would follow." in out
+    assert removed["newsletter_promo"] == 1
+
+
+def test_named_newsletter_in_prose_is_content() -> None:
+    raw = "Officials cited the Parish Council Newsletter as the source of the figures."
+    out, removed = strip_publisher_markers(raw)
+    assert out.strip() == raw
+    assert "newsletter_promo" not in removed
+
+
+def test_self_disclosure_and_its_denial_are_removed() -> None:
+    raw = (
+        "Officials met. The Center for Investigative Reporting, the parent company of "
+        "Mother Jones, has sued OpenAI for copyright violations. OpenAI denies the "
+        "allegations. More followed."
+    )
+    out, removed = strip_publisher_markers(raw, ["Mother Jones"])
+    assert "parent company" not in out and "OpenAI" not in out
+    assert "Officials met." in out and "More followed." in out
+    assert removed["self_disclosure"] == 2
+
+
+def test_ownership_about_another_company_is_content() -> None:
+    raw = "Amazon is owned by its shareholders, the filing said."
+    out, removed = strip_publisher_markers(raw, ["Mother Jones"])
+    assert out.strip() == raw
+    assert "self_disclosure" not in removed

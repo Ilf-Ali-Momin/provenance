@@ -51,7 +51,7 @@ def test_another_outlets_name_is_not_flagged() -> None:
 def test_marker_residue_is_counted_per_document_with_snippets() -> None:
     docs = [
         _doc("vox.com", "WASHINGTON (AP) - Lawmakers met."),
-        _doc("vox.com", "Photo: a crowd gathers. Subscribe to our newsletter."),
+        _doc("vox.com", "Photo: Jane Doe for the paper. Subscribe to our newsletter."),
         _doc("vox.com", "Nothing to see."),
     ]
     report = audit(docs, NAMES)
@@ -61,3 +61,28 @@ def test_marker_residue_is_counted_per_document_with_snippets() -> None:
     assert residue["newsletter"] == 1
     snippets = report["by_publisher"]["vox.com"]["snippets"]  # type: ignore[index]
     assert all(len(s) <= 80 for group in snippets.values() for s in group)
+
+
+def test_prose_that_looks_like_a_marker_is_not_flagged() -> None:
+    """False positives from the pilot 2 review, each one prose rather than residue."""
+    names = {"bostonglobe.com": ("The Boston Globe", "the Globe")}
+    docs = [
+        _doc("bostonglobe.com", "His image beamed around the globe within the hour."),
+        _doc(
+            "bostonglobe.com", "They were all showing the same image: a World Trade Center tower."
+        ),
+        _doc("bostonglobe.com", "The publisher has sued OpenAI for copyright violations."),
+    ]
+    assert audit(docs, names)["documents_with_residue"] == {}
+
+
+def test_real_markers_are_still_flagged() -> None:
+    names = {"bostonglobe.com": ("The Boston Globe", "the Globe")}
+    docs = [
+        _doc("bostonglobe.com", "As the Globe reported last week, the vote failed."),
+        _doc("bostonglobe.com", "Photo by Jane Doe. Copyright 2026 Example Media."),
+    ]
+    residue = audit(docs, names)["documents_with_residue"]
+    assert residue["own_name_unmasked"] == 1
+    assert residue["photo_credit"] == 1
+    assert residue["copyright"] == 1
