@@ -1,0 +1,202 @@
+"""Freeze a collected corpus: dedupe, assign topic, balance, split, hash.
+
+Everything here is a selection decision, so every rule is written down in this
+module and every count it produces goes into the manifest entry. Nothing is
+sampled by a rule that is not in this file.
+
+Topic comes from the article URL path, not from reading the text. A path
+segment such as `/politics/` or `/health/` is the publisher's own filing
+decision and is observable; a classifier over the text would be this project's
+judgement, and a keyword model would learn exactly the vocabulary later models
+are evaluated on. Articles whose path names none of the four topics are kept
+and marked `unknown`, and the unknown rate is reported rather than hidden.
+
+Partisan balance follows D017: equal numbers from left of centre and right of
+centre, drawn evenly across each side's publishers so one prolific outlet
+cannot stand in for its whole side.
+
+Splits are grouped by publishing domain (DATA.md): every domain lands in
+exactly one split, so no outlet's house style leaks between train and test.
+Assignment is deterministic, seeded, and made within each stratum so that
+every stratum with three or more domains has a domain in every split.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import random
+from collections import Counter, defaultdict
+from dataclasses import asdict, replace
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Final
+from urllib.parse import urlsplit
+
+from eval.ood_collection.collect import SNAPSHOT_DATE, Document
+
+TOPICS: Final[dict[str, tuple[str, ...]]] = {
+    "politics": ("politics", "election", "elections", "government", "congress", "white-house"),
+    "health": ("health", "medicine", "wellness", "coronavirus", "healthcare"),
+    "science": ("science", "environment", "climate", "space", "nature"),
+    "business": ("business", "economy", "markets", "finance", "money", "economics"),
+}
+
+SPLIT_PATTERN: Final[tuple[str, ...]] = ("train", "dev", "holdout", "train", "train")
+LEFT: Final = frozenset({"left", "lean_left"})
+RIGHT: Final = frozenset({"right", "lean_right"})
+SEED: Final = 20260101
+
+
+def topic_from_url(url: str) -> str:
+    """The first of the four topics named in the URL path, else `unknown`."""
+    segments = [s.lower() for s in urlsplit(url).path.split("/") if s]
+    for segment in segments:
+        for topic, names in TOPICS.items():
+            if segment in names:
+                return topic
+    return "unknown"
+
+
+def dedupe(documents: list[Document]) -> tuple[list[Document], int]:
+    """Drop repeated document ids and repeated text within one domain.
+
+    Repeats across domains are kept on purpose: the same wire story carried
+    by two publishers is two documents for this corpus, one per outlet.
+    """
+    seen_ids: set[str] = set()
+    seen_text: set[tuple[str, str]] = set()
+    kept: list[Document] = []
+    for doc in documents:
+        key = (doc.domain, doc.text_sha256)
+        if doc.doc_id in seen_ids or key in seen_text:
+            continue
+        seen_ids.add(doc.doc_id)
+        seen_text.add(key)
+        kept.append(doc)
+    return kept, len(documents) - len(kept)
+
+
+def _round_robin(
+    by_domain: dict[str, list[Document]], n: int, rng: random.Random
+) -> list[Document]:
+    """Take n documents cycling across domains, so no one domain dominates."""
+    pools = {d: rng.sample(docs, len(docs)) for d, docs in sorted(by_domain.items())}
+    order = sorted(pools)
+    taken: list[Document] = []
+    while len(taken) < n and any(pools.values()):
+        for domain in order:
+            if pools[domain] and len(taken) < n:
+                taken.append(pools[domain].pop())
+    return taken
+
+
+def balance_partisan(
+    documents: list[Document], rng: random.Random
+) -> tuple[list[Document], dict[str, int]]:
+    """Equal left and right of centre within `partisan`; other strata untouched."""
+    partisan = [d for d in documents if d.stratum == "partisan"]
+    others = [d for d in documents if d.stratum != "partisan"]
+
+    left: dict[str, list[Document]] = defaultdict(list)
+    right: dict[str, list[Document]] = defaultdict(list)
+    for doc in partisan:
+        if doc.lean in LEFT:
+            left[doc.domain].append(doc)
+        elif doc.lean in RIGHT:
+            right[doc.domain].append(doc)
+
+    per_side = min(sum(map(len, left.values())), sum(map(len, right.values())))
+    chosen = _round_robin(left, per_side, rng) + _round_robin(right, per_side, rng)
+    dropped = len(partisan) - len(chosen)
+    return others + chosen, {"per_side": per_side, "dropped_for_balance": dropped}
+
+
+def assign_splits(documents: list[Document], seed: int = SEED) -> dict[str, str]:
+    """Map each domain to one split, within each stratum, deterministically."""
+    domains_by_stratum: dict[str, set[str]] = defaultdict(set)
+    for doc in documents:
+        domains_by_stratum[doc.stratum].add(doc.domain)
+
+    assignment: dict[str, str] = {}
+    for stratum in sorted(domains_by_stratum):
+        ordered = sorted(
+            domains_by_stratum[stratum],
+            key=lambda d: hashlib.sha256(f"{seed}:{d}".encode()).hexdigest(),
+        )
+        for index, domain in enumerate(ordered):
+            assignment[domain] = SPLIT_PATTERN[index % len(SPLIT_PATTERN)]
+    return assignment
+
+
+def corpus_hash(documents: list[Document]) -> str:
+    """sha256 over the sorted per document text hashes."""
+    lines = "\n".join(sorted(f"{d.doc_id}:{d.text_sha256}" for d in documents))
+    return hashlib.sha256(lines.encode()).hexdigest()
+
+
+def freeze(
+    documents: list[Document], seed: int = SEED
+) -> tuple[dict[str, list[dict[str, object]]], dict[str, object]]:
+    """Return split records and the manifest entry describing them."""
+    rng = random.Random(seed)  # noqa: S311 - seeded reproducible sampling, not cryptographic
+    unique, duplicates = dedupe(documents)
+    balanced, balance = balance_partisan(unique, rng)
+    splits = assign_splits(balanced, seed)
+
+    records: dict[str, list[dict[str, object]]] = {"train": [], "dev": [], "holdout": []}
+    for doc in balanced:
+        record = asdict(replace(doc))
+        record["topic"] = topic_from_url(doc.url)
+        record["split"] = splits[doc.domain]
+        records[splits[doc.domain]].append(record)
+
+    all_records = [r for rs in records.values() for r in rs]
+    cells = Counter(f"{r['stratum']}/{r['topic']}" for r in all_records)
+    domains_per_split = {name: len({str(r["domain"]) for r in rs}) for name, rs in records.items()}
+    leakage = {str(r["domain"]) for r in records["train"]} & {
+        str(r["domain"]) for r in records["dev"] + records["holdout"]
+    }
+
+    entry: dict[str, object] = {
+        "id": "ood_suite_2026",
+        "role": "ood_suite",
+        "snapshot_date": SNAPSHOT_DATE.date().isoformat(),
+        "record_count": len(all_records),
+        "sha256": corpus_hash(balanced),
+        "frozen": True,
+        "frozen_at": datetime.now(UTC).isoformat(),
+        "duplicates_removed": duplicates,
+        "partisan_balance": balance,
+        "splits": {
+            "method": "grouped_by_domain",
+            "seed": seed,
+            "train": len(records["train"]),
+            "dev": len(records["dev"]),
+            "frozen_holdout": len(records["holdout"]),
+            "domains_per_split": domains_per_split,
+            "domains_in_more_than_one_split": sorted(leakage),
+            "holdout_inspections": [],
+        },
+        "cells_stratum_topic": dict(sorted(cells.items())),
+        "topic_unknown_rate": round(
+            sum(1 for r in all_records if r["topic"] == "unknown") / max(len(all_records), 1), 4
+        ),
+        "training_use": "prohibited",
+        "training_use_reason": "Evaluation only. Never a training source (DATA.md, D009).",
+        "evaluation_use": "permitted",
+        "redistribution": "prohibited",
+        "checked_in": False,
+    }
+    return records, entry
+
+
+def write_frozen(
+    records: dict[str, list[dict[str, object]]], entry: dict[str, object], out: Path
+) -> None:
+    out.mkdir(parents=True, exist_ok=True)
+    for name, rows in records.items():
+        with (out / f"{name}.jsonl").open("w", encoding="utf-8") as handle:
+            for row in rows:
+                handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    (out / "manifest_entry.json").write_text(json.dumps(entry, indent=2) + "\n", encoding="utf-8")
