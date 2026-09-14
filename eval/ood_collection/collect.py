@@ -49,7 +49,7 @@ from pipeline.net.fetch import fetch
 from pipeline.net.robots import RobotsCache
 from pipeline.net.sitemaps import parse_sitemap, prefer_news
 from pipeline.text.config import ExtractSettings
-from pipeline.text.extract import extract_article
+from pipeline.text.extract import ExtractedArticle, extract_article
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +145,34 @@ def document_id(url: str, text: str) -> str:
     """
     digest = hashlib.sha256(f"{url}\n{text}".encode()).hexdigest()
     return f"doc_{digest[:16]}"
+
+
+def build_document(
+    publisher: dict[str, object],
+    url: str,
+    published: datetime,
+    article: ExtractedArticle,
+) -> Document:
+    """Assemble one document, carrying the publisher's provenance onto it.
+
+    Shared by the live window and the backfill so both produce identical
+    records; a document must not be distinguishable by which path found it.
+    """
+    return Document(
+        doc_id=document_id(url, article.text),
+        domain=str(publisher["domain"]),
+        stratum=str(publisher["stratum"]),
+        lean=publisher.get("lean"),  # type: ignore[arg-type]
+        low_quality=publisher.get("low_quality"),  # type: ignore[arg-type]
+        url=url,
+        title=article.title,
+        published=published.isoformat(),
+        text=article.text,
+        text_sha256=hashlib.sha256(article.text.encode()).hexdigest(),
+        markers_removed=article.removed,
+        had_invisible=article.had_invisible,
+        collected_at=datetime.now(UTC).isoformat(),
+    )
 
 
 def load_publishers(path: Path = SOURCES) -> list[dict[str, object]]:
@@ -431,23 +459,7 @@ def collect_domain(
             rejections.record("non_english")
             continue
 
-        documents.append(
-            Document(
-                doc_id=document_id(entry.url, article.text),
-                domain=domain,
-                stratum=str(publisher["stratum"]),
-                lean=publisher.get("lean"),  # type: ignore[arg-type]
-                low_quality=publisher.get("low_quality"),  # type: ignore[arg-type]
-                url=entry.url,
-                title=article.title,
-                published=entry.published.isoformat(),
-                text=article.text,
-                text_sha256=hashlib.sha256(article.text.encode()).hexdigest(),
-                markers_removed=article.removed,
-                had_invisible=article.had_invisible,
-                collected_at=datetime.now(UTC).isoformat(),
-            )
-        )
+        documents.append(build_document(publisher, entry.url, entry.published, article))
 
     logger.info("%s: kept %d", domain, len(documents))
     return documents
