@@ -150,9 +150,10 @@ def render(report: dict[str, object], preview_chars: int) -> str:
         f"            sha256: {extract['sha256'][:16]}...",  # type: ignore[index]
     ]
 
-    removed = report.get("removed") or {}
+    raw_removed = report.get("removed")
+    removed: dict[str, int] = raw_removed if isinstance(raw_removed, dict) else {}
     if removed:
-        detail = ", ".join(f"{name} x{count}" for name, count in sorted(removed.items()))  # type: ignore[union-attr]
+        detail = ", ".join(f"{name} x{count}" for name, count in sorted(removed.items()))
         lines.append(f"stripped    {detail}")
     else:
         lines.append("stripped    nothing matched the publisher marker rules")
