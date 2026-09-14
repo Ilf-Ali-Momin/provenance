@@ -28,6 +28,7 @@ from pipeline.net.config import FetchSettings
 from pipeline.net.robots import RobotsCache
 from pipeline.text.config import ExtractSettings
 
+from eval.ood_collection.backfill import backfill_domain
 from eval.ood_collection.collect import (
     Document,
     Rejection,
@@ -86,7 +87,9 @@ def record_domain(
         handle.write(json.dumps(entry) + "\n")
 
 
-def run(out_dir: Path, limit: int, domains: list[str] | None) -> dict[str, object]:
+def run(
+    out_dir: Path, limit: int, domains: list[str] | None, backfill: bool = False
+) -> dict[str, object]:
     publishers = load_publishers()
     if domains:
         wanted = set(domains)
@@ -114,6 +117,17 @@ def run(out_dir: Path, limit: int, domains: list[str] | None) -> dict[str, objec
             extract_settings=extract_settings,
             rejections=rejections,
         )
+        if backfill:
+            # The live window first, then the archive, so a story already taken
+            # from the feed is not fetched again from a sitemap (D022).
+            documents += backfill_domain(
+                publisher,
+                robots=robots,
+                fetch_settings=fetch_settings,
+                extract_settings=extract_settings,
+                rejections=rejections,
+                already_have={doc.url for doc in documents},
+            )
         record_domain(out_dir, domain, documents, rejections)
 
     total = Rejection()
@@ -134,6 +148,11 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=12, help="articles per publisher")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--domains", nargs="*", default=None)
+    parser.add_argument(
+        "--backfill",
+        action="store_true",
+        help="also walk archive sitemaps and confirm publication dates from the page (D022)",
+    )
     args = parser.parse_args()
 
     args.out.mkdir(parents=True, exist_ok=True)
@@ -143,7 +162,7 @@ def main() -> None:
         handlers=[logging.FileHandler(args.out / "run.log"), logging.StreamHandler()],
     )
     logging.getLogger("httpx").setLevel(logging.WARNING)
-    summary = run(args.out, args.limit, args.domains)
+    summary = run(args.out, args.limit, args.domains, args.backfill)
     logger.info("done: %s", json.dumps(summary))
 
 

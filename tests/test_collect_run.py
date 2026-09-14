@@ -70,3 +70,37 @@ def test_zero_yield_publishers_are_named(tmp_path: Path, monkeypatch: pytest.Mon
     summary = mod.run(tmp_path, limit=5, domains=None)
 
     assert summary["publishers_yielding_nothing"] == ["empty.com"]
+
+
+def test_backfill_runs_after_the_live_window(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The archive pass must not refetch what the feed already gave."""
+    publishers = [{"domain": "a.com", "stratum": "wire", "lean": None, "low_quality": None}]
+    seen: dict[str, object] = {}
+
+    def fake_collect(publisher: dict[str, object], **kwargs: object) -> list[Document]:
+        return [_doc("a.com", 1)]
+
+    def fake_backfill(publisher: dict[str, object], **kwargs: object) -> list[Document]:
+        seen["already_have"] = kwargs["already_have"]
+        return [_doc("a.com", 2)]
+
+    monkeypatch.setattr(mod, "load_publishers", lambda: publishers)
+    monkeypatch.setattr(mod, "collect_domain", fake_collect)
+    monkeypatch.setattr(mod, "backfill_domain", fake_backfill)
+
+    summary = mod.run(tmp_path, limit=5, domains=None, backfill=True)
+
+    assert summary["documents"] == 2
+    assert seen["already_have"] == {"https://a.com/1"}
+
+
+def test_backfill_is_off_by_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    publishers = [{"domain": "a.com", "stratum": "wire", "lean": None, "low_quality": None}]
+    monkeypatch.setattr(mod, "load_publishers", lambda: publishers)
+    monkeypatch.setattr(mod, "collect_domain", lambda publisher, **kw: [_doc("a.com", 1)])
+    monkeypatch.setattr(
+        mod, "backfill_domain", lambda *a, **k: pytest.fail("backfill must be opt in")
+    )
+    assert mod.run(tmp_path, limit=5, domains=None)["documents"] == 1
