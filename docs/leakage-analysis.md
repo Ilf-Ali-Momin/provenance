@@ -1,8 +1,9 @@
 # Leakage analysis
 
-*Status: both reproductions complete; ablation 4 not run, for the reason given
-below. Every number in this document is measured. None is estimated, rounded
-from memory, or carried over from published work.*
+*Status: all four ablations run. Ablation 4 is reported as a prediction
+distribution rather than an accuracy, for the reason given below. Every number
+in this document is measured. None is estimated, rounded from memory, or
+carried over from published work.*
 
 ## The claim being tested
 
@@ -67,7 +68,7 @@ what matters is whether they agree in shape.
 | First sentence removed | 0.9756 (−0.9 pp) | 0.9710 (−2.1 pp) | leading sentence (dateline already absent) |
 | Length matched | 0.9824 (−0.3 pp) | 0.9700 (−2.2 pp) | document length |
 | Structure only | **0.8184 (−16.7 pp)** | **0.8350 (−15.7 pp)** | **every content word** |
-| Cross domain transfer | not run | not run | — (see below) |
+| Cross domain transfer | no accuracy exists | — | — (own section below) |
 
 ## Reading the numbers
 
@@ -103,19 +104,58 @@ deleted. A pervasive stylistic fingerprint cannot be, which is why D010
 prohibits this corpus as a training source under augmentation, pretraining or
 auxiliary use: the leakage is co-extensive with the labels.
 
+## Ablation 4: what the model says about 2026 news
+
+The fourth ablation asks how the model behaves on text published after the
+corpus was built. EVALUATION.md expects accuracy degrading toward chance. That
+number cannot exist: accuracy needs veracity labels, and the out-of-distribution
+suite deliberately has none (D001). What can be reported is what the model
+*says*. The baseline model, unchanged, was applied to the 384 document frozen
+suite, and the table gives the share of each group it assigns to the corpus's
+wire service half, the class that corpus treats as real.
+
+| Group | Documents | Called "real" |
+| --- | --- | --- |
+| **Whole suite** | 384 | **22.1%** |
+| wire | 15 | 40.0% |
+| regional | 75 | 30.7% |
+| national | 40 | 20.0% |
+| partisan | 254 | 18.9% |
+| lean left | 136 | 36.8% |
+| left | 51 | 15.7% |
+| lean right | 67 | 10.5% |
+| right | 60 | 10.0% |
+| flagged low credibility | 60 | 10.0% |
+
+The same model scores 0.9849 on its own held out split. On real news published
+in 2026 it calls 78% of everything false, including 60% of actual wire copy,
+which is the half of its training data it is supposed to recognise. Its output
+tracks publisher type and political lean: 36.8% for lean left against 10.5% for
+lean right, across articles where no difference in truthfulness has been
+established or claimed.
+
+**The flagged row is not the model working.** Low credibility here is Media
+Bias/Fact Check's label, not a truth verdict, and in this corpus that flag sits
+entirely on right of centre publishers (D017), so it cannot be separated from
+the lean effect above it. The model has never seen a truth label for any of
+these articles.
+
+Two limitations. The suite is one day of news, dominated by a single news cycle
+(`docs/ood-suite.md`), so these shares describe the model's behaviour on that
+day, not across 2026; the measurement is repeated when the spread suite exists.
+And the structure only variant of this ablation has not been run yet.
+
 ## What this does and does not establish
 
 It establishes that reported accuracy on this corpus is not a capability
-measurement, and it quantifies how much of the figure survives the removal of
-content.
+measurement, that most of the figure survives the removal of content, and that
+the resulting model, moved to news from a later year, sorts articles by
+publisher type and political lean rather than by anything it could know about
+truth.
 
-It does not establish how such a model behaves on text published after the
-corpus was built. That is ablation 4, cross-domain transfer, and it **has not
-been run**: it requires the 2026 out-of-distribution slice, which does not yet
-exist. The collection procedure is specified in `eval/ood_collection/README.md`
-and the collector depends on the SSRF-guarded client from M1. Reporting a
-transfer number here without that data would reproduce exactly the overclaiming
-this document exists to criticise, so the row is absent rather than estimated.
+It does not establish that any article in the out-of-distribution suite is true
+or false, and nothing here should be read as evidence about any publisher's
+accuracy.
 
 ## Limitations
 
@@ -123,7 +163,10 @@ The transformer column is a reduced scale run for the reason given in the
 method, so its absolute values should not be quoted as a full corpus
 reproduction. The mirror's provenance is weaker than a first party download and
 its licence is unstated. Ablation 1 is a lower bound, because the mirrors
-arrive pre-stripped. Single seed, one epoch, no hyperparameter search, no
+arrive pre-stripped. Ablation 4 reads the frozen suite as it stands, so its shares
+inherit that suite's defects: one day of news, one dominant news cycle, an
+empty aggregator stratum and a single wire publisher. Its structure only
+variant has not been run. Single seed, one epoch, no hyperparameter search, no
 confidence intervals — deliberately the defaults the criticised approach uses,
 which means differences between adjacent rows are not established as
 significant. Only the structure only gap is too large for seed variance to
@@ -134,6 +177,7 @@ explain.
 ```bash
 PYTHONPATH=. .venv/bin/python eval/leakage/run_linear.py
 PYTHONPATH=. .venv/bin/python eval/leakage/run_transformer.py
+PYTHONPATH=. .venv/bin/python -m eval.leakage.run_transfer --condition baseline
 ```
 
 Results are written to `eval/leakage/results/linear.json` and
