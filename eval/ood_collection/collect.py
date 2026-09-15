@@ -46,7 +46,7 @@ from pipeline.errors import ProvenanceError
 from pipeline.net.config import FetchSettings
 from pipeline.net.feeds import FeedEntry, UnsafeFeedError, candidate_feed_urls, parse_feed
 from pipeline.net.fetch import fetch
-from pipeline.net.robots import RobotsCache
+from pipeline.net.robots import RobotsWithSitemaps
 from pipeline.net.sitemaps import parse_sitemap, prefer_news
 from pipeline.text.config import ExtractSettings
 from pipeline.text.extract import ExtractedArticle, extract_article
@@ -182,7 +182,7 @@ def load_publishers(path: Path = SOURCES) -> list[dict[str, object]]:
 
 
 def find_feed(
-    domain: str, robots: RobotsCache, settings: FetchSettings
+    domain: str, robots: RobotsWithSitemaps, settings: FetchSettings
 ) -> tuple[str, list[FeedEntry]] | str:
     """Locate a usable feed and return its entries, or a reason there is none.
 
@@ -274,7 +274,9 @@ def find_feed(
     return "no_feed"
 
 
-def _fetch_xml(domain: str, url: str, robots: RobotsCache, settings: FetchSettings) -> str | None:
+def _fetch_xml(
+    domain: str, url: str, robots: RobotsWithSitemaps, settings: FetchSettings
+) -> str | None:
     """Fetch a URL that should be XML, honouring robots and refusals."""
     if not robots.allows(url):
         return None
@@ -290,7 +292,7 @@ def _fetch_xml(domain: str, url: str, robots: RobotsCache, settings: FetchSettin
 
 
 def _entries_from_sitemaps(
-    domain: str, robots: RobotsCache, settings: FetchSettings
+    domain: str, robots: RobotsWithSitemaps, settings: FetchSettings
 ) -> tuple[str, list[FeedEntry]] | None:
     """Fall back to the sitemaps robots.txt declares.
 
@@ -373,7 +375,7 @@ def collect_domain(
     publisher: dict[str, object],
     *,
     limit: int,
-    robots: RobotsCache,
+    robots: RobotsWithSitemaps,
     fetch_settings: FetchSettings,
     extract_settings: ExtractSettings,
     rejections: Rejection,

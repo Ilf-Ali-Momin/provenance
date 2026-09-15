@@ -32,7 +32,7 @@ from pipeline.errors import ProvenanceError
 from pipeline.net.config import FetchSettings
 from pipeline.net.feeds import FeedEntry, UnsafeFeedError
 from pipeline.net.fetch import fetch
-from pipeline.net.robots import RobotsCache
+from pipeline.net.robots import RobotsWithSitemaps
 from pipeline.net.sitemaps import parse_sitemap
 from pipeline.text.config import ExtractSettings
 from pipeline.text.extract import extract_article
@@ -83,7 +83,9 @@ def page_date(raw: str | None) -> datetime | None:
     return None
 
 
-def _fetch_xml(domain: str, url: str, robots: RobotsCache, settings: FetchSettings) -> str | None:
+def _fetch_xml(
+    domain: str, url: str, robots: RobotsWithSitemaps, settings: FetchSettings
+) -> str | None:
     if not robots.allows(url):
         return None
     robots.wait_for(url)
@@ -99,7 +101,7 @@ def _fetch_xml(domain: str, url: str, robots: RobotsCache, settings: FetchSettin
 
 def archive_candidates(
     domain: str,
-    robots: RobotsCache,
+    robots: RobotsWithSitemaps,
     settings: FetchSettings,
     limits: CollectSettings | None = None,
 ) -> list[FeedEntry]:
@@ -155,7 +157,7 @@ def archive_candidates(
 def backfill_domain(
     publisher: dict[str, object],
     *,
-    robots: RobotsCache,
+    robots: RobotsWithSitemaps,
     fetch_settings: FetchSettings,
     extract_settings: ExtractSettings,
     rejections: Rejection,

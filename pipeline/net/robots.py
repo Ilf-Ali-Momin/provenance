@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Final
+from typing import Final, Protocol, runtime_checkable
 from urllib.parse import urlsplit
 
 from pipeline.errors import ProvenanceError
@@ -33,6 +33,58 @@ from pipeline.net.fetch import Resolver, fetch
 from pipeline.net.robots_rules import RuleSet, crawl_delay, parse, path_of, sitemap_urls
 
 DEFAULT_MIN_DELAY_S: Final = 2.0
+
+
+@runtime_checkable
+class Policy(Protocol):
+    """What a caller may read off a host's robots policy."""
+
+    fetched: bool
+    delay_s: float
+    sitemaps: list[str]
+
+
+@runtime_checkable
+class Robots(Protocol):
+    """The two gates every caller of a robots source needs.
+
+    Collection code asks for this rather than for `RobotsCache` so the
+    dependency is the questions it actually asks, not a concrete cache with a
+    live network client inside it. A test double then substitutes because it
+    satisfies the interface, not because a type check was suppressed at the
+    call site.
+
+    Neither gate is optional. `allows` decides whether a request may happen and
+    `wait_for` paces it; a caller with one and not the other is not compliant
+    with DATA.md. Naming both here makes omitting one a type error rather than
+    an oversight.
+    """
+
+    def allows(self, url: str) -> bool: ...
+
+    def wait_for(self, url: str) -> None: ...
+
+
+@runtime_checkable
+class RobotsWithSitemaps(Robots, Protocol):
+    """A robots source that also reports the sitemaps a host declares."""
+
+    def sitemaps_for(self, url: str) -> list[str]: ...
+
+
+@runtime_checkable
+class RobotsWithPolicy(Robots, Protocol):
+    """A robots source that can report the policy it applied.
+
+    Split from the others deliberately, and kept narrow. Only the
+    demonstration CLI shows the policy to a reader; only collectors read
+    sitemaps. Folding all of it into one interface would force every test
+    double to implement methods the code under test never calls, which is how
+    an interface stops describing a dependency and starts describing an
+    implementation.
+    """
+
+    def policy_for(self, url: str) -> Policy: ...
 
 
 @dataclass

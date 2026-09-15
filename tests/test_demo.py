@@ -9,6 +9,7 @@ import pytest
 from pipeline import demo as mod
 from pipeline.errors import UpstreamError, UrlRejectedError
 from pipeline.net.fetch import FetchResult
+from pipeline.net.robots import RobotsWithPolicy
 
 BODY = " ".join(f"The committee met on day {i} to consider the budget." for i in range(20))
 HTML = f'<html lang="en"><body><article><h1>Budget</h1><p>{BODY}</p></article></body></html>'
@@ -35,6 +36,11 @@ class StubRobots:
         return StubPolicy()
 
 
+def test_the_stub_satisfies_the_interface_the_demo_asks_for() -> None:
+    """The substitution is legitimate or the rest of this file proves nothing."""
+    assert isinstance(StubRobots(), RobotsWithPolicy)
+
+
 def _install(monkeypatch: pytest.MonkeyPatch, html: str = HTML, status: int = 200) -> list[str]:
     fetched: list[str] = []
 
@@ -48,7 +54,7 @@ def _install(monkeypatch: pytest.MonkeyPatch, html: str = HTML, status: int = 20
 
 def test_reports_every_step(monkeypatch: pytest.MonkeyPatch) -> None:
     _install(monkeypatch)
-    report = mod.inspect("https://example.com/a", robots=StubRobots())  # type: ignore[arg-type]
+    report = mod.inspect("https://example.com/a", robots=StubRobots())
 
     assert report["fetch"]["status"] == 200  # type: ignore[index]
     assert report["extract"]["article"] is True  # type: ignore[index]
@@ -60,14 +66,14 @@ def test_robots_refusal_happens_before_any_request(monkeypatch: pytest.MonkeyPat
     """No override flag exists, and none should."""
     fetched = _install(monkeypatch)
     with pytest.raises(UrlRejectedError):
-        mod.inspect("https://example.com/a", robots=StubRobots(allow=False))  # type: ignore[arg-type]
+        mod.inspect("https://example.com/a", robots=StubRobots(allow=False))
     assert fetched == []
 
 
 def test_crawl_delay_is_honoured_before_fetching(monkeypatch: pytest.MonkeyPatch) -> None:
     _install(monkeypatch)
     robots = StubRobots()
-    mod.inspect("https://example.com/a", robots=robots)  # type: ignore[arg-type]
+    mod.inspect("https://example.com/a", robots=robots)
     assert robots.waited is True
 
 
@@ -76,7 +82,7 @@ def test_outlet_names_are_masked_and_counted(monkeypatch: pytest.MonkeyPatch) ->
     report = mod.inspect(
         "https://example.com/a",
         outlet_names=("The Example Times",),
-        robots=StubRobots(),  # type: ignore[arg-type]
+        robots=StubRobots(),
     )
     assert "The Example Times" not in str(report["text"])
     assert report["removed"]["outlet_name"] == 1  # type: ignore[index]
@@ -84,7 +90,7 @@ def test_outlet_names_are_masked_and_counted(monkeypatch: pytest.MonkeyPatch) ->
 
 def test_page_without_an_article_says_why(monkeypatch: pytest.MonkeyPatch) -> None:
     _install(monkeypatch, "<html><body><nav>Menu</nav></body></html>")
-    report = mod.inspect("https://example.com/index", robots=StubRobots())  # type: ignore[arg-type]
+    report = mod.inspect("https://example.com/index", robots=StubRobots())
     assert report["extract"]["article"] is False  # type: ignore[index]
     assert "paywall" in str(report["extract"]["why"])  # type: ignore[index]
 

@@ -21,6 +21,7 @@ from eval.ood_collection.collect import (
 from pipeline.net.config import FetchSettings
 from pipeline.net.feeds import FeedEntry
 from pipeline.net.fetch import FetchResult
+from pipeline.net.robots import RobotsWithSitemaps
 from pipeline.text.config import ExtractSettings
 
 ARTICLE_BODY = " ".join(
@@ -51,6 +52,11 @@ class StubRobots:
 
     def wait_for(self, url: str) -> None:
         return None
+
+
+def test_the_stub_satisfies_the_robots_interface() -> None:
+    """Collection is only as compliant as the object it asks about robots."""
+    assert isinstance(StubRobots(), RobotsWithSitemaps)
 
 
 def _entries(*specs: tuple[str, datetime | None]) -> list[FeedEntry]:
@@ -87,7 +93,7 @@ def _run(
     docs = collect_domain(
         PUBLISHER,
         limit=limit,
-        robots=StubRobots(),  # type: ignore[arg-type]
+        robots=StubRobots(),
         fetch_settings=FetchSettings(),
         extract_settings=ExtractSettings(),
         rejections=rej,
@@ -225,7 +231,7 @@ def _collect(rej: Rejection) -> list[Document]:
     return collect_domain(
         PUBLISHER,
         limit=10,
-        robots=StubRobots(),  # type: ignore[arg-type]
+        robots=StubRobots(),
         fetch_settings=FetchSettings(),
         extract_settings=ExtractSettings(),
         rejections=rej,
@@ -275,7 +281,7 @@ def test_homepage_refusal_ends_discovery_at_once(monkeypatch: pytest.MonkeyPatch
     from eval.ood_collection.collect import find_feed
 
     asked = _feed_host(monkeypatch, {"https://example.com/": (403, "Forbidden")})
-    result = find_feed("example.com", StubRobots(), FetchSettings())  # type: ignore[arg-type]
+    result = find_feed("example.com", StubRobots(), FetchSettings())
     assert result == "host_refused"
     assert asked == ["https://example.com/"], "one refusal is enough"
 
@@ -291,7 +297,7 @@ def test_feed_mislabelled_as_html_is_still_found(monkeypatch: pytest.MonkeyPatch
         monkeypatch,
         {"https://example.com/": (200, "<html></html>"), "https://example.com/rss": (200, rss)},
     )
-    result = find_feed("example.com", StubRobots(), FetchSettings())  # type: ignore[arg-type]
+    result = find_feed("example.com", StubRobots(), FetchSettings())
     assert isinstance(result, tuple)
     assert result[0] == "https://example.com/rss"
 
@@ -302,7 +308,7 @@ def test_html_pages_are_not_reported_as_hostile_feeds(
     from eval.ood_collection.collect import find_feed
 
     _feed_host(monkeypatch, {"https://example.com/": (200, "<html></html>")})
-    result = find_feed("example.com", StubRobots(), FetchSettings())  # type: ignore[arg-type]
+    result = find_feed("example.com", StubRobots(), FetchSettings())
     assert result == "no_feed"
     assert "declared a DTD" not in caplog.text
 
@@ -311,7 +317,7 @@ def test_robots_refusal_is_named_as_such(monkeypatch: pytest.MonkeyPatch) -> Non
     from eval.ood_collection.collect import find_feed
 
     asked = _feed_host(monkeypatch, {})
-    result = find_feed("example.com", StubRobots(allow=False), FetchSettings())  # type: ignore[arg-type]
+    result = find_feed("example.com", StubRobots(allow=False), FetchSettings())
     assert result == "robots_disallowed"
     assert asked == []
 
@@ -355,7 +361,7 @@ def test_outlet_names_reach_extraction(monkeypatch: pytest.MonkeyPatch) -> None:
     docs = collect_domain(
         PUBLISHER,
         limit=5,
-        robots=StubRobots(),  # type: ignore[arg-type]
+        robots=StubRobots(),
         fetch_settings=FetchSettings(),
         extract_settings=ExtractSettings(),
         rejections=Rejection(),
@@ -387,7 +393,7 @@ def test_sitemap_is_used_when_no_feed_exists(monkeypatch: pytest.MonkeyPatch) ->
         },
     )
     robots = StubRobots(sitemaps=["https://example.com/news-sitemap.xml"])
-    result = find_feed("example.com", robots, FetchSettings())  # type: ignore[arg-type]
+    result = find_feed("example.com", robots, FetchSettings())
     assert isinstance(result, tuple)
     url, entries = result
     assert url == "https://example.com/news-sitemap.xml"
@@ -407,7 +413,7 @@ def test_lastmod_does_not_count_as_a_publication_date(monkeypatch: pytest.Monkey
         },
     )
     robots = StubRobots(sitemaps=["https://example.com/news-sitemap.xml"])
-    result = find_feed("example.com", robots, FetchSettings())  # type: ignore[arg-type]
+    result = find_feed("example.com", robots, FetchSettings())
     assert isinstance(result, tuple)
     edited = next(e for e in result[1] if e.url.endswith("/edited"))
     assert edited.published is None
@@ -506,7 +512,7 @@ def test_non_english_sitemap_is_passed_over_for_the_next(monkeypatch: pytest.Mon
         },
     )
     robots = StubRobots(sitemaps=[mundo, english])
-    result = find_feed("example.com", robots, FetchSettings())  # type: ignore[arg-type]
+    result = find_feed("example.com", robots, FetchSettings())
     assert isinstance(result, tuple)
     assert result[0] == english
     assert [e.url for e in result[1]] == ["https://example.com/news/a"]

@@ -28,7 +28,7 @@ from urllib.parse import urlsplit
 from pipeline.errors import ProvenanceError, UrlRejectedError
 from pipeline.net.config import FetchSettings
 from pipeline.net.fetch import fetch
-from pipeline.net.robots import RobotsCache
+from pipeline.net.robots import RobotsCache, RobotsWithPolicy
 from pipeline.text.config import ExtractSettings
 from pipeline.text.extract import extract_article
 
@@ -41,7 +41,7 @@ PREVIEW_CHARS: Final = 800
 def inspect(
     url: str,
     outlet_names: tuple[str, ...] = (),
-    robots: RobotsCache | None = None,
+    robots: RobotsWithPolicy | None = None,
     fetch_settings: FetchSettings | None = None,
     extract_settings: ExtractSettings | None = None,
 ) -> dict[str, object]:

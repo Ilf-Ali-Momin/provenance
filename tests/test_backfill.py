@@ -12,6 +12,7 @@ from eval.ood_collection.config import CollectSettings
 from pipeline.net.config import FetchSettings
 from pipeline.net.feeds import FeedEntry
 from pipeline.net.fetch import FetchResult
+from pipeline.net.robots import RobotsWithSitemaps
 from pipeline.text.config import ExtractSettings
 from pipeline.text.extract import ExtractedArticle
 
@@ -36,6 +37,10 @@ class StubRobots:
 
     def sitemaps_for(self, url: str) -> list[str]:
         return self.sitemaps
+
+
+def test_the_stub_satisfies_the_robots_interface() -> None:
+    assert isinstance(StubRobots(), RobotsWithSitemaps)
 
 
 def test_spread_samples_the_whole_list() -> None:
@@ -99,7 +104,7 @@ def _run(
     rejections = Rejection()
     documents = mod.backfill_domain(
         PUBLISHER,
-        robots=StubRobots(),  # type: ignore[arg-type]
+        robots=StubRobots(),
         fetch_settings=FetchSettings(),
         extract_settings=ExtractSettings(),
         rejections=rejections,
@@ -171,7 +176,7 @@ def test_urls_already_collected_are_skipped(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(mod, "fetch", lambda *a, **k: pytest.fail("must not fetch a known URL"))
     documents = mod.backfill_domain(
         PUBLISHER,
-        robots=StubRobots(),  # type: ignore[arg-type]
+        robots=StubRobots(),
         fetch_settings=FetchSettings(),
         extract_settings=ExtractSettings(),
         rejections=Rejection(),
