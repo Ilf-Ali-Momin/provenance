@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 from typing import Final
@@ -66,6 +67,15 @@ def load_documents(out_dir: Path) -> list[Document]:
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
+
+
+def months_of(documents: list[Document]) -> Counter[str]:
+    """Months these documents fall in, keyed YYYY-MM.
+
+    A document whose date the page never stated is not counted: it cannot be
+    placed in a month, so it cannot fill a month's quota either.
+    """
+    return Counter(doc.published[:7] for doc in documents if doc.published)
 
 
 def record_domain(
@@ -119,7 +129,9 @@ def run(
         )
         if backfill:
             # The live window first, then the archive, so a story already taken
-            # from the feed is not fetched again from a sitemap (D022).
+            # from the feed is not fetched again from a sitemap (D022). The
+            # live window's months are handed on so the per month cap covers
+            # the publisher's whole sample, not just its archive half.
             documents += backfill_domain(
                 publisher,
                 robots=robots,
@@ -127,6 +139,7 @@ def run(
                 extract_settings=extract_settings,
                 rejections=rejections,
                 already_have={doc.url for doc in documents},
+                months_seen=months_of(documents),
             )
         record_domain(out_dir, domain, documents, rejections)
 

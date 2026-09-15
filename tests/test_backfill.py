@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from datetime import UTC, datetime
 
 import pytest
@@ -66,6 +67,7 @@ def _run(
     candidates: list[FeedEntry],
     page_dates: dict[str, str | None],
     limits: CollectSettings | None = None,
+    months_seen: Counter[str] | None = None,
 ) -> tuple[list, Rejection, list[str]]:
     fetched: list[str] = []
 
@@ -103,6 +105,7 @@ def _run(
         rejections=rejections,
         limits=limits or CollectSettings(),
         outlet_names=(),
+        months_seen=months_seen,
     )
     return documents, rejections, fetched
 
@@ -176,3 +179,32 @@ def test_urls_already_collected_are_skipped(monkeypatch: pytest.MonkeyPatch) -> 
         already_have={entry.url},
     )
     assert documents == []
+
+
+def test_months_already_taken_from_the_live_window_fill_the_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The cap covers the publisher's whole sample, not just its archive half.
+
+    The feed is itself a month. Capping only the archive is what left the first
+    backfill run 459 documents of 528 in September.
+    """
+    candidates = [_entry(f"https://example.com/a{i}") for i in range(4)]
+    dates = {c.url: f"2026-09-1{i}" for i, c in enumerate(candidates)}
+    documents, rejections, _ = _run(
+        monkeypatch, candidates, dates, months_seen=Counter({"2026-09": 2})
+    )
+
+    assert documents == []
+    assert rejections.as_dict()["month_quota_full"] == 4
+
+
+def test_a_month_the_live_window_missed_is_still_open(monkeypatch: pytest.MonkeyPatch) -> None:
+    candidates = [_entry("https://example.com/march"), _entry("https://example.com/sept")]
+    dates = {
+        "https://example.com/march": "2026-03-04",
+        "https://example.com/sept": "2026-09-04",
+    }
+    documents, _, _ = _run(monkeypatch, candidates, dates, months_seen=Counter({"2026-09": 9}))
+
+    assert [d.published[:7] for d in documents] == ["2026-03"]

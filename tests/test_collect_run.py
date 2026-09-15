@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import Counter
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -84,6 +86,7 @@ def test_backfill_runs_after_the_live_window(
 
     def fake_backfill(publisher: dict[str, object], **kwargs: object) -> list[Document]:
         seen["already_have"] = kwargs["already_have"]
+        seen["months_seen"] = kwargs["months_seen"]
         return [_doc("a.com", 2)]
 
     monkeypatch.setattr(mod, "load_publishers", lambda: publishers)
@@ -94,6 +97,8 @@ def test_backfill_runs_after_the_live_window(
 
     assert summary["documents"] == 2
     assert seen["already_have"] == {"https://a.com/1"}
+    # The live window's month is handed on so the cap covers the whole sample.
+    assert seen["months_seen"] == Counter({"2026-03": 1})
 
 
 def test_backfill_is_off_by_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -104,3 +109,9 @@ def test_backfill_is_off_by_default(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         mod, "backfill_domain", lambda *a, **k: pytest.fail("backfill must be opt in")
     )
     assert mod.run(tmp_path, limit=5, domains=None)["documents"] == 1
+
+
+def test_months_of_ignores_documents_the_page_never_dated() -> None:
+    dated = _doc("a.com", 1)
+    undated = replace(_doc("a.com", 2), published=None)
+    assert mod.months_of([dated, undated]) == Counter({"2026-03": 1})

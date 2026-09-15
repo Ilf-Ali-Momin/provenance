@@ -163,15 +163,25 @@ def backfill_domain(
     snapshot: datetime = SNAPSHOT_DATE,
     outlet_names: tuple[str, ...] | None = None,
     already_have: set[str] | None = None,
+    months_seen: Counter[str] | None = None,
 ) -> list[Document]:
-    """Fetch archive candidates and keep those the page dates after the snapshot."""
+    """Fetch archive candidates and keep those the page dates after the snapshot.
+
+    ``months_seen`` carries the months this publisher has already contributed
+    from the live window, so the per month cap applies to the publisher's whole
+    sample rather than to the archive alone. Without it the cap cannot do the
+    job it exists for: the live window is itself a month, and the first backfill
+    run left the suite 459 documents of 528 in September because the archive was
+    capped and the feed was not.
+    """
     limits = limits or CollectSettings()
     domain = str(publisher["domain"])
     names = outlet_names if outlet_names is not None else load_outlet_names().get(domain, ())
     have = already_have or set()
 
     candidates = archive_candidates(domain, robots, fetch_settings, limits)
-    month_counts: Counter[str] = Counter()
+    month_counts: Counter[str] = Counter(months_seen or {})
+    months_added: set[str] = set()
     documents: list[Document] = []
     fetched = 0
     now = datetime.now(UTC)
@@ -240,6 +250,7 @@ def backfill_domain(
             rejections.record("month_quota_full")
             continue
         month_counts[month] += 1
+        months_added.add(month)
         documents.append(build_document(publisher, entry.url, published, article))
 
     logger.info(
@@ -247,6 +258,6 @@ def backfill_domain(
         domain,
         len(documents),
         fetched,
-        len(month_counts),
+        len(months_added),
     )
     return documents
