@@ -194,7 +194,7 @@ corpora:
     personal_data:
       contains: true
       lawful_basis: legitimate interest, research
-      balancing_test: not yet written
+      balancing_test: docs/balancing-test.md
       retention: >-
         Held only in the local HF cache for the duration of the ablation. No
         article text is committed, and none reaches any project database.
@@ -281,8 +281,10 @@ corpora:
     personal_data:
       contains: true
       lawful_basis: legitimate interest, research
-      balancing_test: 'OPEN OBLIGATION: not yet written'
-      retention: Held for the evaluation; deletion procedure not yet implemented.
+      balancing_test: docs/balancing-test.md
+      retention: Held for the evaluation. Deletion is implemented, with a receipt,
+        at eval/ood_collection/erase.py. Storage is NOT in an EU region as DATA.md
+        describes; see section 5 of the balancing test.
     normalisation:
       extraction_pipeline: 2fbca13+reclean:3489893
       identical_across_strata: true
