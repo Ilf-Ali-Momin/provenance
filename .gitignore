@@ -48,3 +48,7 @@ eval/leakage/results/*.log
 .DS_Store
 .idea/
 .vscode/
+
+# Injection suite checkpoint. A resume file for one run in progress, not a
+# result: the completed run is written to results.json.
+eval/injection/*.partial.jsonl
