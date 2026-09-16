@@ -49,25 +49,57 @@ scale reproduction; what matters is whether the columns agree in shape.
 
 | Condition | Linear, full | DistilBERT, reduced | Information removed |
 | --- | --- | --- | --- |
-| Baseline | **0.9849** | **0.9920** | none |
-| First sentence removed | 0.9756 (−0.9 pp) | 0.9710 (−2.1 pp) | leading sentence (dateline already absent) |
-| Length matched | 0.9824 (−0.3 pp) | 0.9700 (−2.2 pp) | document length |
-| Structure only | **0.8184 (−16.7 pp)** | **0.8350 (−15.7 pp)** | **every content word** |
+| Baseline | **0.9849** | 0.9920 † | none |
+| First sentence removed | 0.9756 (−0.9 pp) | 0.9710 † | leading sentence (dateline already absent) |
+| Length matched | 0.9824 (−0.3 pp) | 0.9700 † | document length |
+| Structure only | **0.8184 (−16.7 pp)** | **0.832 mean, 0.765–0.872** | **every content word** |
+
+The linear column is **single seed and deterministic**, measured rather than
+assumed: five seeds return 0.9849 and 0.8184 to four decimal places. The mirror
+ships a fixed train and test split so nothing resamples, `structure_only` is a
+deterministic transform, and `LogisticRegression` under lbfgs does not consult
+`random_state`. Single seed costs nothing where there is nothing for a seed to
+change.
+
+The transformer column is a different matter. **† marks a single run made before
+the runner seeded anything**: `torch.manual_seed` was never called, so the
+classification head's initialisation and the batch shuffle were uncontrolled.
+Those three figures are one draw each and are not reproducible. The
+structure-only row is three controlled seeds and they span **0.765 to 0.872**, a
+range of 10.8 points.
+
+That range is wider than the first-sentence and length-matched deltas sitting
+beside it, so **those two transformer deltas establish nothing**. They are left
+in the table without a delta rather than deleted, because removing them would
+hide that they were measured.
 
 ## Reading the numbers
 
 Structure only is decisive. With no nouns, verbs, names or topic — nothing a
-human could read — accuracy is **81.8%** and **83.5%** against 50% chance.
-Punctuation, capitalisation and length alone carry roughly two thirds of the
-distance from chance to the headline figure. That two unrelated model families
-land within 1.7 points of each other there matters more than either number: the
-signal belongs to the corpus, not the classifier. A comma does not move when a
-claim becomes false. The model separates two publishing pipelines — one house
-style guide, one HTML scrape — by their formatting residue.
+human could read — accuracy is **81.8%** on the linear probe and **76.5% to
+87.2%** across three transformer seeds, against 50% chance. Punctuation,
+capitalisation and length alone carry roughly two thirds of the distance from
+chance to the headline figure. A comma does not move when a claim becomes false.
+The model separates two publishing pipelines — one house style guide, one HTML
+scrape — by their formatting residue.
 
-Length matching costs 0.3 and 2.2 points: real but minor. First sentence
-removal costs 0.9 and 2.1, against pre-stripped text, so it measures what a
-*second* removal would cost.
+**A claim withdrawn.** An earlier version of this document said the two model
+families "land within 1.7 points of each other" here, and that the agreement
+mattered more than either number. That rested on a single unseeded transformer
+run of 0.835. With seeding controlled the transformer spans 0.765 to 0.872, and
+the linear probe's 0.818 sits inside that range. The agreement was one draw, not
+a measurement, and the sentence is withdrawn rather than softened.
+
+What survives is weaker and still sufficient: two unrelated model families both
+land far above chance with every content word destroyed — 0.818, and 0.765 on
+the worst transformer seed. That supports the signal being a property of the
+corpus rather than of one probe. It does not support the two agreeing closely,
+and this document no longer says they do.
+
+Length matching costs 0.3 points on the linear probe and first sentence removal
+0.9, both deterministic. The matching transformer figures fall inside that
+column's seed noise and are not interpreted. First sentence removal runs against
+pre-stripped text, so it measures what a *second* removal would cost.
 
 The surviving signal is distributed, not concentrated in one sentence. A single
 leaky feature could be deleted; a stylistic fingerprint cannot. Hence D010
@@ -112,12 +144,19 @@ against 10.5% of lean-right, a 26.3 point gap, and that gap was reported as a
 finding. On a suite spread across nine months it is 7.9 points, and under the
 structure-only model it reverses sign.
 
-| | First freeze (384 docs, one day) | v4 (266 docs, nine months) |
-| --- | --- | --- |
-| Baseline, lean left | 36.8% | 27.9% |
-| Baseline, lean right | 10.5% | 20.0% |
-| **Baseline gap** | **+26.3 pp** | **+7.9 pp** |
-| Structure-only gap | +10.5 pp | **&minus;14.3 pp** |
+| | First freeze (384 docs, one day) | v4 (266 docs, nine months) | v4, 95% over publishers |
+| --- | --- | --- | --- |
+| Baseline, lean left | 36.8% | 27.9% | [13.6%, 42.6%] |
+| Baseline, lean right | 10.5% | 20.0% | [6.6%, 48.3%] |
+| **Baseline gap** | **+26.3 pp** | **+7.9 pp** | **[&minus;25.5, +27.8] pp** |
+| Structure-only gap | +10.5 pp | **&minus;14.3 pp** | **[&minus;36.9, +8.0] pp** |
+
+**Both gaps straddle zero.** Neither is established as non-zero once the
+publisher is treated as the sampling unit, and the intervals are wide because
+`lean_right` holds six outlets. That width is the honest width: a narrower one
+would come from treating 50 documents from 6 publishers as 50 independent
+draws, which they are not. Seed variance contributes nothing here either — five
+refits give identical rates to four decimal places.
 
 **The 26.3 point gap is withdrawn.** It was a property of that corpus, not a
 measured property of the model, and reporting it as the latter was an error.
@@ -175,10 +214,18 @@ a first party download and its licence is unstated. Ablation 1 is a lower bound.
 Ablation 4 inherits the frozen suite's remaining defects — an empty aggregator
 stratum, two wire publishers, 266 documents against a 400–600 target (D028) —
 and its September rates are confounded with the live collection path.
-Single seed, one epoch, no hyperparameter search, no confidence intervals —
-deliberately the defaults the criticised approach uses, so differences between
-adjacent rows are not established as significant. Only the structure only gap is
-too large for seed variance to explain.
+One epoch and no hyperparameter search, deliberately the defaults the criticised
+approach uses. The leakage table stays single seed for the same reason: the
+approach under criticism reports one run, and reproducing it with an interval
+would be reproducing something else. Intervals are added only where this
+document asserts something — the structure-only row, and ablation 4's whole-suite
+and lean rows — and everything else is marked single seed above.
+
+Differences between adjacent rows in the transformer column are not established
+as significant, and after seeding they are known not to be: its structure-only
+seeds span 10.8 points, which is wider than any of those differences. Only the
+structure-only gap is large enough to carry the argument, on both model families
+and on every seed.
 
 ## Reproduction
 
