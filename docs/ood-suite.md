@@ -29,6 +29,32 @@ safe grouping variable. Median length 3,601 characters.
 Pipeline: collected at `2fbca13`, text rules re-applied at `3489893` (D021).
 Corpus sha256 begins `9c59a053dfdd2214`.
 
+## The refusal asymmetry
+
+Sixty-nine publishers were approached under one procedure. Who answered was not
+independent of what kind of publisher they are.
+
+| Side of the pool | Approached | Yielded anything | Rate |
+| --- | --- | --- | --- |
+| Centre or unrated | 11 | 9 | 82% |
+| Left of centre | 34 | 22 | 65% |
+| Right of centre | 24 | 10 | 42% |
+
+Newsmax, OANN, the Daily Wire, The Federalist, National Review and Infowars
+returned nothing: HTTP 403, no readable feed, or no sitemap carrying a
+publication date. A right-of-centre publisher in this pool was about half as
+likely to be collectable as a centre one.
+
+This is reported as a result rather than as the reason the corpus is short.
+Collectability tracks feed and sitemap hygiene, bot-management policy and
+paywall design — publisher infrastructure — so the sampling frame of any
+web-collected news corpus is correlated with the axis such corpora are used to
+analyse. It is the same category of error as the leakage this project
+documents, arriving in the sampling frame instead of in the labels, and it binds
+every project that builds a corpus this way. The pool was not widened to work
+around it (D028). See section 3 of the M0 report.
+
+
 ## How it was made
 
 Sixty-nine candidate publishers, with bias and credibility labels taken from

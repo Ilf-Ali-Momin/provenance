@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Provenance — M0 work report</title>
+<style>
+@page { size: A4; margin: 20mm 18mm 18mm 18mm; }
+@page :first { margin-top: 28mm; }
+
+:root {
+  --ink: #16191f;
+  --ink-2: #4a515e;
+  --ink-3: #7b8290;
+  --line: #d7dce4;
+  --accent: #2c5aa0;
+  --stop: #93351d;
+  --sunk: #f1f3f7;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 9.6pt;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; font-weight: normal; margin: 0; }
+h1 { font-size: 26pt; line-height: 1.1; letter-spacing: -0.01em; }
+h2 {
+  font-size: 14pt; margin: 20pt 0 7pt; padding-bottom: 4pt;
+  border-bottom: 0.5pt solid var(--line); break-after: avoid;
+}
+h3 { font-size: 10.5pt; margin: 12pt 0 3pt; break-after: avoid; font-weight: bold; }
+p { margin: 0 0 7pt; }
+strong { font-weight: 600; }
+
+.eyebrow {
+  font-family: Menlo, Consolas, monospace; font-size: 7.2pt; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-3); margin-bottom: 6pt;
+}
+.lede { font-size: 11pt; line-height: 1.45; color: var(--ink-2); margin: 10pt 0 0; max-width: 46em; font-family: Georgia, serif; }
+
+.meta { margin-top: 14pt; padding-top: 10pt; border-top: 0.5pt solid var(--line);
+        font-family: Menlo, Consolas, monospace; font-size: 7.8pt; color: var(--ink-3); }
+.meta span { margin-right: 18pt; white-space: nowrap; }
+
+table { border-collapse: collapse; width: 100%; font-size: 8.6pt; margin: 6pt 0 10pt; break-inside: avoid; }
+th, td { text-align: left; padding: 4pt 7pt; border-bottom: 0.4pt solid var(--line); vertical-align: top; }
+thead th {
+  font-family: Menlo, Consolas, monospace; font-size: 6.9pt; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-3); font-weight: normal;
+  border-bottom: 0.7pt solid var(--ink-3);
+}
+td.n, th.n { text-align: right; font-family: Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+tr.key td { background: #f6ecea; font-weight: 600; }
+
+code, .mono { font-family: Menlo, Consolas, monospace; font-size: 0.88em; }
+code { background: var(--sunk); padding: 0.5pt 3pt; border-radius: 2pt; }
+
+.note { border-left: 2pt solid var(--accent); padding: 2pt 0 2pt 10pt; margin: 8pt 0 10pt; color: var(--ink-2); break-inside: avoid; }
+.warn { border-left: 2pt solid var(--stop); padding: 2pt 0 2pt 10pt; margin: 8pt 0 10pt; break-inside: avoid; }
+.warn p:last-child, .note p:last-child { margin-bottom: 0; }
+
+pre { font-family: Menlo, Consolas, monospace; font-size: 7.8pt; line-height: 1.45;
+      background: var(--sunk); padding: 8pt 10pt; margin: 6pt 0 10pt; white-space: pre-wrap;
+      color: var(--ink-2); break-inside: avoid; }
+
+ul { margin: 0 0 8pt; padding-left: 16pt; }
+li { margin-bottom: 3pt; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22pt; }
+.break { break-before: page; }
+.avoid { break-inside: avoid; }
+.dim { color: var(--ink-3); }
+.small { font-size: 8.4pt; }
+</style>
+</head>
+<body>
+
+<p class="eyebrow">Milestone M0 &middot; Evaluation before models</p>
+<h1>Provenance</h1>
+<p class="lede">An evidence-surfacing system for news claims. This is a record of the work done on milestone M0: the leakage critique that motivates the project, the out-of-distribution corpus built to test it, and the defects found along the way — including the ones I introduced.</p>
+<p class="meta">
+  <span>2026-09-16</span>
+  <span>39 commits</span>
+  <span>330 tests</span>
+  <span>26 decisions</span>
+  <span>branch master</span>
+</p>
+
+<h2>1. The three things that do not move</h2>
+<p>Stated in <code>README.md</code> before any code existed, and each one is load-bearing rather than aspirational.</p>
+<ul>
+  <li><strong>The system never outputs a truth verdict.</strong> Not a score, not a label, not a hedged one. It surfaces evidence and says where the evidence came from. This is D001, and it is why ablation 4 below reports a prediction distribution instead of an accuracy.</li>
+  <li><strong>Evaluation is written before the model.</strong> The collection procedure was specified in full, and committed, before the collector existed (D013). A procedure designed after the data is visible drifts toward whatever the data happens to contain, and the drift is invisible to the person causing it.</li>
+  <li><strong>Every fetched byte is hostile.</strong> The fetcher validates addresses, pins the connection to the address it validated, revalidates on every redirect, and caps both size and decompression mid-stream.</li>
+</ul>
+
+<h2>2. The finding: what a 99% accuracy figure is actually measuring</h2>
+<p>The standard project on this topic trains a classifier on the ISOT-style corpus and reports accuracy in the high nineties as an ability to detect false news. That corpus's true half is wire copy from one agency; its false half is a heterogeneous scrape. If accuracy survives the removal of information that cannot possibly carry veracity, the classifier was never measuring veracity.</p>
+
+<table>
+  <thead>
+    <tr><th>Condition</th><th class="n">Linear, full</th><th class="n">DistilBERT, reduced</th><th>Information removed</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Baseline</td><td class="n">0.9849</td><td class="n">0.9920</td><td>none</td></tr>
+    <tr><td>First sentence removed</td><td class="n">0.9756</td><td class="n">0.9710</td><td>leading sentence</td></tr>
+    <tr><td>Length matched</td><td class="n">0.9824</td><td class="n">0.9700</td><td>document length</td></tr>
+    <tr class="key"><td>Structure only</td><td class="n">0.8184</td><td class="n">0.8350</td><td>every content word</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Structure only is the decisive row.</strong> Every content word is replaced with a shape token — <code>Trump</code> becomes <code>Xxxxx</code>, <code>2017</code> becomes <code>0000</code> — leaving punctuation, capitalisation and length. Nothing a human could read survives. Accuracy is still 81.8% and 83.5% against a 50% chance baseline. Formatting residue alone carries roughly two thirds of the distance from chance to the headline figure.</p>
+
+<div class="note">
+<p>That two unrelated model families, at different corpus scales, land 1.7 points apart on that condition matters more than either number. One probe could be an artefact of the probe. Two agreeing this closely indicates the signal belongs to the corpus.</p>
+</div>
+
+<p>A document's comma placement does not change when its content becomes false. What the classifier separates is two publishing pipelines — one house style guide, one HTML scrape — by their formatting residue.</p>
+
+<h3>Two of the plan's own predictions were contradicted</h3>
+<p><code>EVALUATION.md</code> expected ablations 1–3 each to remove a large fraction of the accuracy. First-sentence removal costs 0.9–2.1 points; length matching 0.3–2.2. Both are nearly nothing, and both are reported as contradicted rather than quietly reinterpreted.</p>
+<p>There is a measured cause for the first. The <code>CITY (Reuters) -</code> dateline survives in only <strong>0.3%</strong> of wire documents across all three reachable mirrors — they arrive pre-stripped — so ablation 1 is a lower bound, not a clean test of the dateline hypothesis. The leakage turns out to be distributed across the document rather than concentrated in one deletable sentence. That is worse for the corpus, and it is why D010 bars this corpus from augmentation and pretraining use as well as from direct training: the leakage is co-extensive with the labels.</p>
+
+<h2 class="break">3. The refusal asymmetry: what a web-collected news corpus can contain</h2>
+
+<p>This is a second measured result, not a note about why the corpus is short. Sixty-nine publishers were approached under one procedure: robots.txt honoured, one conservative crawl delay, one user agent, refusals recorded and never worked around (D019). The procedure did not vary by publisher. What varied was who answered.</p>
+
+<table>
+  <thead>
+    <tr><th>Side of the publisher pool</th><th class="n">Approached</th><th class="n">Yielded anything</th><th class="n">Rate</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Centre or unrated</td><td class="n">11</td><td class="n">9</td><td class="n">82%</td></tr>
+    <tr><td>Left of centre</td><td class="n">34</td><td class="n">22</td><td class="n">65%</td></tr>
+    <tr class="key"><td>Right of centre</td><td class="n">24</td><td class="n">10</td><td class="n">42%</td></tr>
+  </tbody>
+</table>
+
+<p>Newsmax, OANN, the Daily Wire, The Federalist, National Review and Infowars all returned nothing: HTTP 403, no readable feed, or no sitemap carrying a publication date. <strong>A right-of-centre publisher in this pool was about half as likely to be collectable as a centre one.</strong></p>
+
+<div class="note">
+<p><strong>This binds every project in this space, not just this one.</strong> Any corpus assembled by fetching news from the open web inherits it. A project that widens its publisher pool until the document count looks respectable has not solved it — it has selected on collectability and published the result as if it described the press.</p>
+</div>
+
+<p>Collectability is not a neutral property. It tracks feed and sitemap hygiene, CDN and bot-management policy, and whether an outlet runs a hard paywall — all facts about publisher infrastructure, and none of them independent of the kind of publisher an outlet is. So the sampling frame of a web-collected news corpus is correlated with exactly the axis such corpora are usually used to analyse.</p>
+
+<p>That is the same category of error as the leakage in section 2, arriving one level earlier. In section 2 the labels carried publisher identity. Here the <em>sampling frame</em> does, before a single label is applied. A model trained on such a corpus would learn a property of who answers an HTTP request, and its accuracy would not reveal that, because the corpus would look better for it — a corpus with fewer refusals is larger, more balanced on paper, and wrong in a way nothing downstream can detect.</p>
+
+<p><strong>What this project did about it.</strong> Nothing, deliberately, beyond measuring and reporting it (D028). The pool was not widened, refusals were not retried, and the user agent was never changed to get past a 403. The corpus is short as a direct result, and that is the correct trade: the alternative buys documents by importing a bias the project exists to document.</p>
+
+<p><strong>What the measurement does not establish.</strong> Why the asymmetry exists. Bot-management vendor choice, budget, CMS age and deliberate policy are all consistent with it, and this project has no evidence separating them. It also says nothing about publishers outside this 69-domain pool, which was itself built from Media Bias/Fact Check's coverage. The finding is that the asymmetry is there and is large, not that its cause is known.</p>
+
+<h2 class="break">4. Ablation 4: what the model says about 2026 news</h2>
+
+<div class="warn">
+<p><strong>No accuracy appears in this section, and none is available.</strong> Accuracy requires veracity labels, and the out-of-distribution suite deliberately carries none (D001). Each figure below is the share of a group that the ISOT model assigns to the corpus's wire-service half — the class that corpus treats as real. <strong>No group here is established as more or less truthful than any other.</strong></p>
+</div>
+
+<p>The plan expected accuracy decaying toward chance on later text. That number cannot exist, so what is reported instead is what the model <em>says</em>. Both the baseline model and the structure-only model were applied unchanged to the 384-document frozen suite.</p>
+
+<table>
+  <thead>
+    <tr><th>Group</th><th class="n">Documents</th><th class="n">Baseline</th><th class="n">Structure only</th></tr>
+  </thead>
+  <tbody>
+    <tr class="key"><td>Whole suite</td><td class="n">384</td><td class="n">22.1%</td><td class="n">40.9%</td></tr>
+    <tr><td>Wire</td><td class="n">15</td><td class="n">40.0%</td><td class="n">60.0%</td></tr>
+    <tr><td>Regional</td><td class="n">75</td><td class="n">30.7%</td><td class="n">38.7%</td></tr>
+    <tr><td>National</td><td class="n">40</td><td class="n">20.0%</td><td class="n">37.5%</td></tr>
+    <tr><td>Partisan</td><td class="n">254</td><td class="n">18.9%</td><td class="n">40.9%</td></tr>
+    <tr><td>Lean left</td><td class="n">136</td><td class="n">36.8%</td><td class="n">47.8%</td></tr>
+    <tr><td>Lean right</td><td class="n">67</td><td class="n">10.5%</td><td class="n">37.3%</td></tr>
+    <tr><td>Flagged low credibility</td><td class="n">60</td><td class="n">10.0%</td><td class="n">30.0%</td></tr>
+  </tbody>
+</table>
+
+<p>A model scoring 0.9849 on its own held-out split calls <strong>78% of real 2026 news false</strong> — including 60% of actual wire copy, the half of its training data it is supposed to recognise. Its output tracks publisher type and political lean: 36.8% for lean-left against 10.5% for lean-right, across articles where no difference in truthfulness has been established or claimed.</p>
+
+<p>Destroying every content word relaxes that. The blanket rejection eases to 40.9%, wire recognition rises to 60%, and <strong>the lean gap narrows from 26.3 points to 10.5</strong>. Most of the political skew therefore rides on topic vocabulary — what 2026 articles happen to be about — while a smaller stylistic component survives the loss of every readable word. This locates the skew; neither model is doing anything with veracity. Single seed, no intervals, so the residual 10.5 points is not established as non-zero.</p>
+
+<div class="warn">
+<p><strong>The flagged row is not the model working.</strong> Low credibility is Media Bias/Fact Check's label, not a truth verdict, and in this corpus it sits entirely on right-of-centre publishers (D017), so it cannot be separated from the lean effect above it. The model has never seen a truth label for any of these articles.</p>
+</div>
+
+<h2>5. The out-of-distribution corpus</h2>
+<p>The suite that produces the honest number: real articles published after the training snapshot of 2026-01-01, stratified by publisher type, carrying no veracity labels by design.</p>
+
+<h3>The first freeze failed its own plan, and was reported as failing it</h3>
+<p>384 documents, 31 publishers — and <strong>289 of them published on a single day</strong>, the 25th anniversary of the September 11 attacks, with 27% of the corpus mentioning the attacks. Feeds and news sitemaps list only the last day or two, so one collection run cannot spread across weeks as the plan requires. The freeze was recorded in the manifest and written up as inadequate rather than presented as a result.</p>
+
+<h3>Two fixes, in sequence</h3>
+<p><strong>D022 — reach past the live window.</strong> Archive sitemaps list far more than feeds, but date entries only by last modification, and a page edited this year may have been published years ago. D019 refuses <code>lastmod</code> as a publication date, so each archive candidate is fetched and kept only if the page itself states a publication date after the snapshot. Most do not, which is what the per-publisher fetch budget is for.</p>
+<p><strong>D024 — the cap was on the wrong half.</strong> The first backfill run improved the spread but still left 459 of 528 documents in September. The per-month cap governed only the archive; the live window, which is itself one news cycle, was uncapped. One cap now covers a publisher's whole sample, and the live window was cut from 15 articles to 3.</p>
+
+<h3>What the rebuild produced</h3>
+<table>
+  <thead>
+    <tr><th>Measure</th><th class="n">First freeze</th><th class="n">Frozen v3</th><th>Plan</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Months represented</td><td class="n">1</td><td class="n">9</td><td>spread across weeks, not one cycle</td></tr>
+    <tr><td>Largest single day</td><td class="n">75%</td><td class="n">20.7%</td><td>no single news cycle dominates</td></tr>
+    <tr><td>Mentioning 9/11</td><td class="n">27%</td><td class="n">0.8%</td><td>—</td></tr>
+    <tr><td>Publishers</td><td class="n">31</td><td class="n">41</td><td>—</td></tr>
+    <tr><td>Wire documents</td><td class="n">15</td><td class="n">30</td><td>thinnest stratum, still thin</td></tr>
+    <tr><td>Documents with identity residue</td><td class="n">1</td><td class="n">2</td><td>from 42 before the rule fixes</td></tr>
+    <tr class="key"><td>Documents</td><td class="n">384</td><td class="n">266</td><td>400–600, floor 300</td></tr>
+  </tbody>
+</table>
+
+<p>Reuters is the clearest gain. Its homepage and feeds are disallowed by <code>robots.txt</code>, so it contributed nothing before; its archive paths are permitted, so it now supplies three articles per month across nine months — a publisher previously scored as a total refusal.</p>
+
+<h3 class="break">Why 266 and not 400</h3>
+<p>Collection returned 331 documents; balancing the partisan stratum by lean (D017) dropped 59. The reason the balance costs that much is the refusal asymmetry in section 3, which is a finding in its own right rather than an explanation for a shortfall. The count consequence is in section 11.</p>
+
+<h3>The audit, and a process error of mine</h3>
+<p>The collection plan makes a clean audit and a residual check preconditions of freezing. I said so, then wrote a job that ran both and froze regardless of what they reported. The audit flagged publisher-identity residue in <strong>42 of 331 documents</strong>; the freeze proceeded anyway. That freeze (v2) was superseded rather than kept.</p>
+<p>Re-running the existing rules removed nothing. Reading all 42 by hand found two different problems wearing one label:</p>
+<ul>
+  <li><strong>Real residue the rules missed.</strong> Links back into the publisher's own domains — hosts are lowercase and unspaced, so a case-sensitive name mask never sees <code>bbc.co.uk/learningenglish</code>. Institutional bylines with no surname to match. Standalone captions with no credit word. A licence notice inside a sentence, where the line-anchored rule could not reach. And a masking gap: <code>outlet_names.yaml</code> records <code>the Post</code> lowercase, so every sentence opening "The Post's broader goal" went unmasked.</li>
+  <li><strong>The audit flagging prose.</strong> "By Friday afternoon, Hezbollah had issued a statement" is not a byline. "Advanced Placement (AP)" is not the Associated Press. "in the Atlantic Ocean" is not The Atlantic. Its self-link check flagged every third-party link an article cited, because a pattern can see that a URL is present but not whose it is.</li>
+</ul>
+<p>Both sides were fixed in one pass, each new rule tested against the prose it must not touch as well as the residue it must remove. <strong>Flagged documents fell from 42 to 2</strong>, and both survivors are documents that are not articles — a newsletter issue and a donation page. No text rule fixes that; it is a selection failure, and the audit now names the two kinds separately (D026).</p>
+
+<div class="warn">
+<p><strong>None of it moved the thing underneath.</strong> Predicting the stratum from text, grouped by publisher, scores 0.5981 against a 0.5988 majority baseline — strata are not separable, which is the result the plan wants. But publisher identity is still recoverable at <strong>38.3% against an 8.2% chance baseline</strong> across 41 classes, and 28.3% from structure alone. That is where it sat before the rule work. Removing explicit markers did not touch the stylistic fingerprint underneath, and marker stripping has reached its limit here.</p>
+</div>
+
+<h2>6. Defects found by running the thing</h2>
+<p>Each was caught by a test failing or a real fetch misbehaving. None would have been found by reading the code, and several are mine.</p>
+
+<h3>robots.txt was under-blocking</h3>
+<p>Associated Press publish <code>Disallow: /*.rss</code>. Python's <code>urllib.robotparser</code> has no wildcard support and reports that path as <em>allowed</em> — a publisher stated a restriction and the parser granted permission. Rule matching is now implemented directly: anchored regexes with metacharacters escaped, longest match wins, agent-specific groups replacing the wildcard group. A test asserts the standard library still gets it wrong, so the reason for the custom matcher cannot be forgotten.</p>
+
+<h3>Two address ranges the standard library misses</h3>
+<p><code>100.64.0.1</code> (carrier-grade NAT) reports <code>is_private = False</code>. <code>64:ff9b::7f00:1</code> — NAT64 wrapping <code>127.0.0.1</code> — reports <code>is_global = True</code>. Both are live SSRF bypasses against a naive check. Every IPv6 form embedding an IPv4 address is now unwrapped and re-checked.</p>
+
+<h3>A size cap that could never fire</h3>
+<p>httpx only counts wire bytes on a genuinely streamed response. My test fixture was pre-read, so the counter sat at zero and the test passed while exercising nothing. Fixtures now stream, and the test additionally asserts the abort happens part-way through the body.</p>
+
+<h3>The stratum had become a proxy for politics</h3>
+<p>Routing publishers by credibility left <code>partisan</code> at 15 left-of-centre to 4 right, and the quality stratum at 7 right to 0 left. A model separating strata would have learned politics while appearing to learn quality — the same category error this project exists to document. Quality became an orthogonal flag (D017) and <code>partisan</code> moved to 23:20 on identical candidates.</p>
+
+<h3>Seventeen suppressed type checks hiding one real risk</h3>
+<p>Collectors took <code>robots: RobotsCache</code>, a concrete class holding a live HTTP client, so every test double was passed under <code># type: ignore[arg-type]</code>. The suppressed check is the one that catches a double missing <code>wait_for</code> — the call that paces every request. Three <code>runtime_checkable</code> protocols replace it, split by what callers actually use. A single four-method protocol was written first and the new conformance test failed it: the demo's double has no <code>sitemaps_for</code> because the demo never calls it. The interface was wrong, not the test (D025).</p>
+
+<h3>Two commits landed on a red suite</h3>
+<p>Both times because <code>pytest | tail</code> and <code>mypy | tail -1</code> report the exit code of <code>tail</code>, not of the checker. Verification now reads exit codes directly, with no pipe. In the first case the failing test was correct and the rule it tested was wrong, so the rule was fixed — a failing test is never adjusted to make a suite pass.</p>
+
+<h2 class="break">7. Governance: what was promised, and what is actually in place</h2>
+<p>Policy text is not a control. <code>data/MANIFEST.yaml</code> records the real state of each obligation, including the ones not met.</p>
+
+<table>
+  <thead><tr><th>Obligation</th><th>State</th></tr></thead>
+  <tbody>
+    <tr><td>Written legitimate-interests balancing test — purpose, necessity, balancing, safeguards, reversing conditions (<code>docs/balancing-test.md</code>)</td><td>closed</td></tr>
+    <tr><td>Deletion that actually deletes — refuses targets outside the data root, resolves paths before the containment check, receipt carries a SHA-256 per file and never text</td><td>closed</td></tr>
+    <tr><td>No article text in logs, errors or git</td><td>closed, tested</td></tr>
+    <tr><td>No verdict about any person or claim</td><td>closed, structural</td></tr>
+    <tr><td>Publisher markers stripped before storage, one pipeline for every stratum</td><td>closed</td></tr>
+    <tr class="key"><td>Encrypted storage in an EU region — the corpora sit on one developer machine; host disk encryption is not this control</td><td>open, stated</td></tr>
+    <tr class="key"><td>A route for a data subject to object — none is published; a response would be manual</td><td>open, stated</td></tr>
+  </tbody>
+</table>
+
+<p>The balancing test records what makes the balance uncomfortable as well as what supports it: incidental Article 9 data that no filter can catch in advance, the gap between "published" and "expects to be in a corpus", and the absence of any mechanism by which a data subject could object. It concludes that the interest carries, narrowly, and only because the processing is small, non-decisional, non-redistributed and time-limited.</p>
+
+<h2>8. Running it</h2>
+<p>A demonstration CLI runs one URL through every stage and prints what each did. It bypasses nothing: a URL that <code>robots.txt</code> disallows is refused exactly as it is in collection, and there is deliberately no flag to override that.</p>
+<pre>PYTHONPATH=. .venv/bin/python -m pipeline.demo &lt;url&gt;
+
+URL         https://www.theguardian.com/artanddesign/2026/sep/14/...
+robots.txt  fetched=True crawl_delay=2.0s sitemaps=2 (137 ms)
+fetch       HTTP 200 text/html 386228 bytes (88 ms)
+extract     13250 characters (53 ms)
+            page date: 2026-09-14  language: en  english ratio: 0.29
+            invisible characters: False
+            sha256: 560f61d66ea3d613...
+stripped    nothing matched the publisher marker rules</pre>
+<p>Exit codes separate refusal (2) from failure (1), so a disallowed URL is never confused with an unreachable one. <code>--json</code> gives machine-readable output, <code>--outlet-name</code> masks a publisher's self-references, <code>--verbose</code> logs each network step.</p>
+
+<h2>9. Verification state</h2>
+<table>
+  <thead><tr><th>Check</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>pytest</td><td class="mono">330 passed, 2 deselected</td></tr>
+    <tr><td>ruff check</td><td class="mono">All checks passed</td></tr>
+    <tr><td>ruff format --check</td><td class="mono">clean</td></tr>
+    <tr><td>mypy strict (pipeline, eval)</td><td class="mono">no issues in 34 source files</td></tr>
+    <tr><td>pre-commit (ruff, ruff-format, gitleaks)</td><td class="mono">passing on every commit</td></tr>
+  </tbody>
+</table>
+<p class="small dim">Exit codes are read directly rather than through a pipe, for the reason given in section 5. 4,907 lines of source against 3,451 lines of tests. <code>mypy tests/</code> reports 66 errors — mostly dict invariance in test helpers — and tests are not yet in mypy's <code>files</code>; that is recorded in D025 rather than fixed silently.</p>
+
+<h2>10. Decisions</h2>
+<p class="small">Each entry in <code>context/DECISIONS.md</code> carries the alternatives it rejected, the reason each lost, the costs being accepted rather than solved, and the condition that would reverse it.</p>
+<table>
+  <thead><tr><th style="width:3.4em">ID</th><th>Decision</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">D001</td><td>The system does not output a truth verdict</td></tr>
+    <tr><td class="mono">D002</td><td>Rhetoric detection is multilabel and span scoped, not document binary</td></tr>
+    <tr><td class="mono">D003</td><td>Retrieve then classify stance, rather than end to end</td></tr>
+    <tr><td class="mono">D004</td><td>LLM used for claim extraction only</td></tr>
+    <tr><td class="mono">D005</td><td>ONNX CPU inference, no GPU in production</td></tr>
+    <tr><td class="mono">D006</td><td>Bluesky and Reddit for the circulation signal</td></tr>
+    <tr><td class="mono">D007</td><td>Source registry stores observations, never scores</td></tr>
+    <tr><td class="mono">D008</td><td>Asynchronous URL fetch, never inline</td></tr>
+    <tr><td class="mono">D009</td><td>Frozen holdout inspected exactly twice</td></tr>
+    <tr><td class="mono">D010</td><td>The ISOT style corpus is never used for training</td></tr>
+    <tr><td class="mono">D011</td><td>Mypy strict covers <code>eval/</code> as well as <code>app/</code> and <code>pipeline/</code></td></tr>
+    <tr><td class="mono">D012</td><td><code>data/MANIFEST.yaml</code> is where corpus use restrictions are enforced</td></tr>
+    <tr><td class="mono">D013</td><td>The OOD collection is specified in writing before it is implemented</td></tr>
+    <tr><td class="mono">D014</td><td>The transformer reproduction is run at reduced scale</td></tr>
+    <tr><td class="mono">D015</td><td>The fetcher pins the connection to the address it validated</td></tr>
+    <tr><td class="mono">D016</td><td>Publisher lean is recorded as its own axis, and the stratum confound is reported rather than absorbed</td></tr>
+    <tr><td class="mono">D017</td><td><code>low_quality</code> is an orthogonal flag, not a stratum</td></tr>
+    <tr><td class="mono">D018</td><td>A publisher's own name is masked in its own articles</td></tr>
+    <tr><td class="mono">D019</td><td>Refusals end collection from a host, and <code>lastmod</code> is not a publication date</td></tr>
+    <tr><td class="mono">D020</td><td>The OOD suite is gated to English at the listing and at the page</td></tr>
+    <tr><td class="mono">D021</td><td>Text-only construction rules may be re-applied to a stored run</td></tr>
+    <tr><td class="mono">D022</td><td>OOD collection must reach beyond the live publishing window</td></tr>
+    <tr><td class="mono">D023</td><td>The aggregator stratum is left empty and reported</td></tr>
+    <tr><td class="mono">D024</td><td>The per month cap covers the publisher's whole sample, not the archive alone</td></tr>
+    <tr><td class="mono">D025</td><td>Collectors depend on a robots interface, not on the robots cache</td></tr>
+    <tr><td class="mono">D026</td><td>Publisher stripping is widened by audit, and the audit is corrected with it</td></tr>
+  </tbody>
+</table>
+
+<h2 class="break">11. What is not done</h2>
+
+<h3>Requires a decision that is not mine to make</h3>
+<ul>
+  <li><strong>The corpus is 266 documents against a 400–600 target and a 300 floor.</strong> This is the count consequence of the refusal asymmetry in section 3, not a separate problem. Because the partisan stratum is balanced by lean, the thinner side sets the quota, so collecting more of everything else adds nothing. Getting past 300 means accepting an unbalanced partisan stratum, widening the pool with outlets chosen for being collectable, or accepting a corpus below the floor. The second is rejected in D028 for the reason section 3 gives; the first and third are live and are recorded rather than absorbed.</li>
+  <li><strong>Publisher identity remains recoverable at 38.3% against 8.2% chance.</strong> Marker stripping has reached its limit. Whether that matters depends on what is built on this corpus next.</li>
+  <li><strong>Two documents in the frozen suite are not articles</strong> — a newsletter issue and a donation page. They are detected and named, not removed.</li>
+</ul>
+
+<h3>Known and outstanding</h3>
+<ul>
+  <li>Ablation 4 was measured on the superseded 384-document freeze. It has not been re-run against frozen v3.</li>
+  <li>The aggregator stratum is empty. Five aggregators were candidates; all five either refuse this collector or publish nothing it can read (D023).</li>
+  <li>The wire stratum reaches only two of the three splits, and is 30 documents from 2 publishers.</li>
+  <li>Topic is unknown for 93.6% of the suite, because topic is read from the publisher's own URL path rather than inferred from the text.</li>
+  <li><code>tests/</code> is not covered by mypy; that run reports 66 errors, unrelated to the robots work that exposed it.</li>
+  <li>M1 is partially done — fetcher, robots, extraction, demo CLI, Postgres and Redis all exist; the Flask skeleton does not.</li>
+</ul>
+
+<div class="note">
+<p><strong>On the numbers in this document.</strong> Every figure was read from <code>eval/leakage/results/*.json</code>, the collection run's own output, or the frozen suite on disk. The DistilBERT column is a reduced-scale run — 6,000 documents at 128 tokens, forced by host load and recorded as D014 — so its absolute values are not a full-corpus reproduction, and only the structure-only gap is large enough to survive single-seed variance. Both leakage columns are single-seed with no confidence intervals, deliberately matching the defaults of the approach under criticism.</p>
+</div>
+
+<p class="small dim" style="margin-top:14pt; padding-top:8pt; border-top:0.5pt solid var(--line)">
+Frozen suite <span class="mono">ood_suite_2026_spread</span>, 266 records, sha256 <span class="mono">f7b361e57ec0553d75eb6dc50ebda7fd192b5f0cbd2b5a0c01a78274a8c9efbc</span>, frozen 2026-09-16. Corpus text is not redistributable and is not checked in. Head <span class="mono">2eb9f60</span>.
+</p>
+
+</body>
+</html>

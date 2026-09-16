@@ -66,6 +66,65 @@
           }
         },
         "reading": "seed_variance is what refitting the model changes. publisher_bootstrap_95 resamples publishers with replacement and is the interval that bears on a claim about publishers; it is wide because the lean buckets hold few outlets, and that width is the honest width."
+      },
+      "baseline": {
+        "condition": "baseline",
+        "seeds": 5,
+        "isot_held_out_accuracy": {
+          "mean": 0.9849,
+          "min": 0.9849,
+          "max": 0.9849,
+          "range": 0.0
+        },
+        "seed_variance": {
+          "lean_gap_pp": {
+            "mean": 7.9412,
+            "min": 7.9412,
+            "max": 7.9412,
+            "range": 0.0
+          },
+          "lean_left": {
+            "mean": 0.2794,
+            "min": 0.2794,
+            "max": 0.2794,
+            "range": 0.0
+          },
+          "lean_right": {
+            "mean": 0.2,
+            "min": 0.2,
+            "max": 0.2,
+            "range": 0.0
+          },
+          "whole_suite": {
+            "mean": 0.2218,
+            "min": 0.2218,
+            "max": 0.2218,
+            "range": 0.0
+          }
+        },
+        "publisher_bootstrap_95": {
+          "whole_suite": {
+            "low": 0.1468,
+            "high": 0.3018,
+            "draws_usable": 2000
+          },
+          "lean_left": {
+            "low": 0.1363,
+            "high": 0.4262,
+            "draws_usable": 2000
+          },
+          "lean_right": {
+            "low": 0.0655,
+            "high": 0.4833,
+            "draws_usable": 1997
+          },
+          "lean_gap_pp": {
+            "low": -25.5434,
+            "high": 27.8252,
+            "draws_usable": 1997
+          }
+        },
+        "reading": "seed_variance is what refitting the model changes. publisher_bootstrap_95 resamples publishers with replacement and is the interval that bears on a claim about publishers; it is wide because the lean buckets hold few outlets, and that width is the honest width."
       }
     }
   }
