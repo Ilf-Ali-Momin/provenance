@@ -43,6 +43,11 @@ class RedisQueue:
             default_timeout=self._settings.job_timeout_s,
         )
 
+    @property
+    def client(self) -> object:
+        """The connection, so the rate limiter shares it rather than opening a second."""
+        return self._redis
+
     def ping(self) -> str | None:
         """Readiness probe. Returns a problem string, or None when healthy."""
         try:

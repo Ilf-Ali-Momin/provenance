@@ -13,14 +13,18 @@ exception message can carry a fragment of the document that caused it, and a
 
 from __future__ import annotations
 
+import re
+from http import HTTPStatus
 from typing import Any
 
 import structlog
 from flask import Flask, jsonify
+from flask.typing import ResponseReturnValue
 from pipeline.errors import ProvenanceError
 from werkzeug.exceptions import HTTPException
 
 logger = structlog.get_logger(__name__)
+_RETRY_AFTER = re.compile(r"retry after (\d+)s")
 
 
 def _body(code: str, message: str) -> dict[str, Any]:
@@ -29,9 +33,15 @@ def _body(code: str, message: str) -> dict[str, Any]:
 
 def register(app: Flask) -> None:
     @app.errorhandler(ProvenanceError)
-    def _provenance(exc: ProvenanceError) -> tuple[Any, int]:
+    def _provenance(exc: ProvenanceError) -> ResponseReturnValue:
         logger.warning("request_failed", code=exc.code, detail=str(exc))
-        return jsonify(_body(exc.code, str(exc))), exc.http_status
+        response = jsonify(_body(exc.code, str(exc)))
+        if exc.http_status == HTTPStatus.TOO_MANY_REQUESTS:
+            # API.md specifies Retry-After on 429. Without it a client retries
+            # immediately, which is the behaviour the limit exists to stop.
+            match = _RETRY_AFTER.search(str(exc))
+            response.headers["Retry-After"] = match.group(1) if match else "60"
+        return response, exc.http_status
 
     @app.errorhandler(HTTPException)
     def _http(exc: HTTPException) -> tuple[Any, int]:

@@ -154,3 +154,58 @@ def test_polling_an_unknown_analysis_is_a_400(app: Flask) -> None:
         "/v1/analyses/an_nothing", headers={"Authorization": f"Bearer {KEY}"}
     )
     assert response.status_code == 400
+
+
+# --- rate limiting at the endpoint (SECURITY.md control 5) ------------------
+
+
+@pytest.fixture
+def tight(queue: StubQueue) -> Flask:
+    health.clear_checks()
+    return create_app(
+        AppSettings(
+            api_keys=(KEY, "second-key-bbbbbbbbbbbbbbbbbb"),
+            fetch_limit_per_key=2,
+            rate_limit_per_key=50,
+            fetches_per_domain_per_hour=3,
+        ),
+        queue=queue,
+    )
+
+
+def test_the_fetch_path_is_limited_per_key_with_a_retry_after(tight: Flask) -> None:
+    for n in range(2):
+        assert (
+            _post(tight, {"input": {"type": "url", "context_url": f"{URL}?{n}"}}).status_code == 202
+        )
+    response = _post(tight, {"input": {"type": "url", "context_url": f"{URL}?3"}})
+    assert response.status_code == 429
+    assert response.json["error"]["code"] == "rate_limited"
+    assert int(response.headers["Retry-After"]) > 0
+
+
+def test_the_domain_limit_holds_across_different_keys(tight: Flask, queue: StubQueue) -> None:
+    """Control 5: no more than N fetches of one domain regardless of key."""
+    other = "second-key-bbbbbbbbbbbbbbbbbb"
+    assert _post(tight, {"input": {"type": "url", "context_url": f"{URL}?1"}}).status_code == 202
+    assert _post(tight, {"input": {"type": "url", "context_url": f"{URL}?2"}}).status_code == 202
+    assert (
+        _post(tight, {"input": {"type": "url", "context_url": f"{URL}?3"}}, key=other).status_code
+        == 202
+    )
+    blocked = _post(tight, {"input": {"type": "url", "context_url": f"{URL}?4"}}, key=other)
+    assert blocked.status_code == 429
+    assert blocked.json["error"]["code"] == "domain_rate_limited"
+    assert len(queue.submitted) == 3
+
+
+def test_a_rate_limited_submission_never_reaches_the_queue(tight: Flask, queue: StubQueue) -> None:
+    for n in range(4):
+        _post(tight, {"input": {"type": "url", "context_url": f"{URL}?{n}"}})
+    assert len(queue.submitted) <= 2
+
+
+def test_health_is_never_rate_limited(tight: Flask) -> None:
+    """A probe blocked by a limit reports the service down when it is not."""
+    for _ in range(30):
+        assert tight.test_client().get("/health/live").status_code == 200

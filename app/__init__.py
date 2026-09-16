@@ -23,6 +23,7 @@ from flask import Flask, Response, g, request
 
 from app import api, errors, health
 from app.config import AppSettings
+from app.limits import MemoryWindow, RateLimiter, RedisWindow, Window
 from app.logging import configure
 from app.queue import Submitter
 
@@ -80,13 +81,19 @@ def create_app(settings: AppSettings | None = None, queue: Submitter | None = No
     # The queue is constructed here, not imported at module scope, so a test
     # can pass its own and the app never opens a Redis connection it does not
     # need. Readiness learns about Redis by the queue registering itself.
+    redis_client: object | None = None
     if queue is None:
         from app.queue import RedisQueue
 
         live = RedisQueue(settings)
         health.register_check("redis", live.ping)
+        redis_client = live.client
         queue = live
-    app.register_blueprint(api.blueprint(settings, queue))
+    # The limiter shares Redis with the queue when there is one, so the per
+    # domain counter is global across every API process. A memory window in a
+    # multi process deployment would limit per worker, which is not a limit.
+    window: Window = MemoryWindow() if redis_client is None else RedisWindow(redis_client)
+    app.register_blueprint(api.blueprint(settings, queue, RateLimiter(window, settings)))
 
     logger.info("app_created", service=settings.service_name, environment=settings.environment)
     return app

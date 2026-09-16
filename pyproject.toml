@@ -29,6 +29,14 @@ dependencies = [
   "structlog>=25.1",
   "rq>=2.0",
   "redis>=5.2",
+  # Public suffix list. ARCHITECTURE.md requires the registrable domain to be
+  # "resolved through the public suffix list rather than naive string
+  # splitting, since subdomain handling is a common source of both bugs and
+  # evasion", and SECURITY.md control 5's per domain fetch limit is exactly
+  # where that evasion would occur. Already present transitively via
+  # trafilatura -> courlan; declared directly because a security control must
+  # not depend on another package's dependency choices.
+  "tld>=0.13",
 ]
 
 [project.optional-dependencies]

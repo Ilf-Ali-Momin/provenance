@@ -41,6 +41,19 @@ class AppSettings(BaseSettings):
     # a retention decision about personal data.
     result_ttl_s: int = Field(default=1800, gt=0)
 
+    # Rate limiting (SECURITY.md control 5). Tiered by key, with a separate
+    # tighter limit on the URL fetch path because it is the expensive one and
+    # the one that generates outbound traffic attributable to us.
+    rate_limit_per_key: int = Field(default=120, gt=0)
+    fetch_limit_per_key: int = Field(default=20, gt=0)
+    rate_limit_period_s: int = Field(default=60, gt=0)
+    # Per target domain, global across every key. Conservative by default:
+    # DATA.md requires rate limits "well under anything that would look like
+    # scraping pressure", and this is the control that keeps our address out of
+    # publisher blocklists.
+    fetches_per_domain_per_hour: int = Field(default=30, gt=0)
+    domain_period_s: int = Field(default=3600, gt=0)
+
     # Authentication. API.md: every endpoint except /health takes a bearer key.
     # Empty means the API refuses every request rather than allowing every one,
     # because an unset secret must never be the permissive case.

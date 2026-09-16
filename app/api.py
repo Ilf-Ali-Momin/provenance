@@ -32,6 +32,7 @@ from pipeline.net.config import FetchSettings
 from pipeline.net.fetch import validate_url
 
 from app.config import AppSettings
+from app.limits import RateLimiter
 from app.queue import Submitter
 
 logger = structlog.get_logger(__name__)
@@ -49,12 +50,15 @@ class BadRequestError(ProvenanceError):
     http_status = 400
 
 
+def _supplied_key() -> str:
+    return request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+
+
 def _requires_key(settings: AppSettings) -> Callable[[F], F]:
     def decorator(view: F) -> F:
         @wraps(view)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            header = request.headers.get("Authorization", "")
-            supplied = header.removeprefix("Bearer ").strip()
+            supplied = _supplied_key()
             # compare_digest against every configured key: a plain `in` leaks
             # key length and prefix through timing, and the set is small.
             if not supplied or not any(
@@ -68,7 +72,7 @@ def _requires_key(settings: AppSettings) -> Callable[[F], F]:
     return decorator
 
 
-def blueprint(settings: AppSettings, queue: Submitter) -> Blueprint:
+def blueprint(settings: AppSettings, queue: Submitter, limiter: RateLimiter) -> Blueprint:
     bp = Blueprint("api", __name__, url_prefix="/v1")
     needs_key = _requires_key(settings)
 
@@ -103,6 +107,15 @@ def blueprint(settings: AppSettings, queue: Submitter) -> Blueprint:
         except UrlRejectedError as exc:
             raise BadRequestError(str(exc)) from exc
 
+        # Order matters. The per key limits come first because they are about
+        # this caller; the domain limit comes last because a rejection there is
+        # about a publisher's servers and should not be reachable by a caller
+        # who is already over their own budget.
+        api_key = _supplied_key()
+        limiter.check_key(api_key)
+        limiter.check_fetch(api_key)
+        limiter.check_domain(url)
+
         analysis_id = request.headers.get("Idempotency-Key") or analysis_id_for(url)
         queue.submit(FetchRequest(analysis_id=analysis_id, url=url))
         return (
@@ -119,6 +132,7 @@ def blueprint(settings: AppSettings, queue: Submitter) -> Blueprint:
     @bp.get("/analyses/<analysis_id>")
     @needs_key
     def poll(analysis_id: str) -> tuple[Any, int]:
+        limiter.check_key(_supplied_key())
         outcome = queue.outcome(analysis_id)
         if outcome is not None:
             return jsonify({"analysis_id": analysis_id, **outcome.model_dump()}), 200
