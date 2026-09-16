@@ -111,15 +111,31 @@ not in place today (§5), so the honest statement is that the balance is met
 | No redistribution | in place |
 | No verdict about any person or claim | in place, structural |
 | Collection honours robots and refusals | in place (D019) |
-| Encrypted storage in an EU region | **not in place** |
-| Documented deletion procedure | **see §6** |
+| Encrypted storage in an EU region | in place, checked 2026-09-16 |
+| Documented deletion procedure | in place, §6 |
+| A published route to object | **procedure written (§6a); contact address outstanding** |
 
-The storage gap is stated rather than worked around. The corpora sit on a
-single developer machine, not in an EU-region encrypted store, so DATA.md's
-description of where this data lives is currently aspirational. Disk encryption
-on the host is not a substitute for the control as written. Anyone reading the
-manifest should know the difference between what the policy says and what the
-filesystem does.
+The storage row was open in the first version of this assessment and is now
+closed on evidence. The corpus sits on a host in the EU with FileVault full disk
+encryption enabled, confirmed by `fdesetup status` reporting "FileVault is On"
+on 2026-09-16. Both halves of the control as DATA.md writes it — encrypted, and
+in an EU region — are therefore met. The method and the date are recorded in
+`data/MANIFEST.yaml` so the claim can be rechecked rather than taken on trust.
+
+## 6a. Objecting
+
+[`docs/objection-procedure.md`](objection-procedure.md) sets out how a request
+is received, verified, actioned and logged, with the statutory deadlines and
+the honest limit of the search. §7 of this assessment listed the absence of such
+a route as a reversing condition; the procedure now exists.
+
+**One part of it is not yet real.** It has no contact address, because the
+project has none: the crawler's user agent advertises `https://example.invalid/bot`,
+a reserved domain that cannot resolve, so every publisher contacted during
+collection was given a route that does not work either. A dedicated address is
+being created. Until it exists, this safeguard is written but unreachable, and
+the balance in §4 should be read accordingly — it leans on this safeguard, and
+the safeguard is not yet load bearing.
 
 ## 6. Retention and deletion
 
@@ -144,9 +160,9 @@ Reversing conditions, any one of which flips this assessment:
 - The corpus is redistributed, published, or shared outside the project.
 - The corpus grows past the scale the evaluation needs, at which point
   necessity fails before balancing does.
-- An objection is received from a data subject. There is no mechanism to
-  receive one, which is itself a limitation: the project publishes no contact
-  route for erasure requests. A response would be manual and would use §6.
+- An objection is received from a data subject. The procedure for that is §6a,
+  and the response is manual. Until the contact address exists, no objection can
+  reach the project at all, which is a live gap rather than a theoretical one.
 
 **Review.** Before any corpus is collected under different settings, and before
 any freeze supersedes `ood_suite_2026`.

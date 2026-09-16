@@ -7,6 +7,7 @@ and are never loaded by any serving path (MANIFEST.yaml, D010).
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import time
@@ -58,10 +59,18 @@ def _subsample(split: Split, n: int, seed: int = 0) -> Split:
     return Split([split.x[i] for i in idx], split.y[idx])
 
 
-def run_one(cond: Condition, train: Split, test: Split, device: torch.device) -> float:
+def run_one(
+    cond: Condition, train: Split, test: Split, device: torch.device, seed: int = 0
+) -> float:
+    # Seeded explicitly. Without this the run is not reproducible and repeat
+    # runs measure uncontrolled nondeterminism rather than seed variance, which
+    # is the opposite of what a reported range is for. Three things draw:
+    # the subsample, the classification head's initialisation, and the batch
+    # shuffle.
+    torch.manual_seed(seed)
     tr, te = apply_condition(train, test, cond)
-    tr = _subsample(tr, TRAIN_SUBSAMPLE)
-    te = _subsample(te, TEST_SUBSAMPLE)
+    tr = _subsample(tr, TRAIN_SUBSAMPLE, seed)
+    te = _subsample(te, TEST_SUBSAMPLE, seed)
     tok = AutoTokenizer.from_pretrained(MODEL_ID)
     model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID, num_labels=2).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=LR)
@@ -88,22 +97,35 @@ def run_one(cond: Condition, train: Split, test: Split, device: torch.device) ->
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Transformer ablations.")
+    parser.add_argument("--conditions", nargs="*", default=list(CONDITIONS))
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        default=1,
+        help="repeat each condition this many times, seeded 0..n-1, and record every run",
+    )
+    args = parser.parse_args()
+
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     logger.info("device=%s model=%s", device, MODEL_ID)
     train, test = load_corpus()
     dest = Path("eval/leakage/results/transformer.json")
-    out: dict[str, dict[str, float | int]] = {}
+    out: dict[str, dict[str, object]] = {}
     if dest.exists():
         out = json.loads(dest.read_text())
-    for cond in CONDITIONS:
-        if cond in out:
-            logger.info("%s already done, skipping", cond)
-            continue
-        t0 = time.time()
-        acc = run_one(cond, train, test, device)
-        out[cond] = {"accuracy": round(acc, 4), "seconds": round(time.time() - t0, 1)}
-        logger.info("%-24s acc=%.4f", cond, acc)
-        dest.write_text(json.dumps(out, indent=2) + "\n")
+    for cond in args.conditions:
+        entry = out.setdefault(cond, {})
+        runs: dict[str, object] = entry.setdefault("runs", {})  # type: ignore[assignment]
+        for seed in range(args.seeds):
+            if str(seed) in runs:
+                logger.info("%s seed %d already done, skipping", cond, seed)
+                continue
+            t0 = time.time()
+            acc = run_one(cond, train, test, device, seed)
+            runs[str(seed)] = {"accuracy": round(acc, 4), "seconds": round(time.time() - t0, 1)}
+            logger.info("%-24s seed=%d acc=%.4f", cond, seed, acc)
+            dest.write_text(json.dumps(out, indent=2) + "\n")
 
 
 if __name__ == "__main__":

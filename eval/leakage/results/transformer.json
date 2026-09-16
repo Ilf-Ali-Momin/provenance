@@ -9,7 +9,13 @@
   },
   "structure_only": {
     "accuracy": 0.835,
-    "seconds": 546.3
+    "seconds": 546.3,
+    "runs": {
+      "0": {
+        "accuracy": 0.872,
+        "seconds": 480.8
+      }
+    }
   },
   "length_matched": {
     "accuracy": 0.97,

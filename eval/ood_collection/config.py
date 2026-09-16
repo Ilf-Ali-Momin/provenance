@@ -31,3 +31,23 @@ class CollectSettings(BaseSettings):
     backfill_sitemaps: int = Field(default=4, gt=0)
     backfill_children: int = Field(default=6, gt=0)
     backfill_candidates: int = Field(default=400, gt=0)
+
+
+class TopicSettings(BaseSettings):
+    """Zero-shot topic measurement (D029).
+
+    RULES.md forbids literal thresholds: every one is a named setting so the
+    evaluation suite can sweep it. The floor decides when the classifier is
+    not confident enough to name a topic, and a document below it is reported
+    as `unclear` rather than pushed into whichever label scored highest.
+    """
+
+    model_config = SettingsConfigDict(env_prefix="TOPIC_", frozen=True)
+
+    model_id: str = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
+    # Pinned. RULES.md requires a base model identifier pinned to a revision,
+    # and CI checks for unpinned model references.
+    revision: str = "6f5cf0a2b59cabb106aca4c287eed12e357e90eb"
+    entailment_floor: float = Field(default=0.60, gt=0.0, lt=1.0)
+    max_characters: int = Field(default=2000, gt=0)
+    batch_size: int = Field(default=8, gt=0)

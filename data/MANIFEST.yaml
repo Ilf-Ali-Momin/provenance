@@ -243,8 +243,11 @@ corpora:
       notes: Rerunning collects a different corpus; the frozen files are the suite.
     storage:
       location: data/ood/frozen-v4 on a FileVault encrypted local disk
-      region: 'OPEN OBLIGATION: not the EU region SECURITY.md control 6 requires'
+      region: EU
+      region_evidence: Host located in the EU, confirmed with the project on 2026-09-16.
       encrypted_at_rest: true
+      encryption_method: macOS FileVault, full volume. Verified 2026-09-16 by
+        `fdesetup status` reporting "FileVault is On". Recheck with the same command.
     record_count: 266
     sha256: 1adb5673758262806c14d5edec3c8b02dd6a338276132734bb0f5d0dd3322415
     frozen: true
@@ -283,8 +286,16 @@ corpora:
       lawful_basis: legitimate interest, research
       balancing_test: docs/balancing-test.md
       retention: Held for the evaluation. Deletion is implemented, with a receipt,
-        at eval/ood_collection/erase.py. Storage is NOT in an EU region as DATA.md
-        describes; see section 5 of the balancing test.
+        at eval/ood_collection/erase.py.
+      objection_route: >-
+        Procedure written at docs/objection-procedure.md, covering receipt,
+        proportionate verification, action and logging with the statutory
+        deadlines. NOT YET REACHABLE: the project publishes no working contact.
+        The crawler user agent advertises https://example.invalid/bot, a reserved
+        domain that cannot resolve, so publishers contacted during collection had
+        no route either. A dedicated address is being created; this row is not
+        closed until it exists and appears in the procedure and in
+        FetchSettings.user_agent.
     normalisation:
       extraction_pipeline: 7800954+reclean
       identical_across_strata: true

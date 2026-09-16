@@ -1,0 +1,72 @@
+{
+  "1adb5673758262806c14d5edec3c8b02dd6a338276132734bb0f5d0dd3322415": {
+    "corpus": {
+      "id": "ood_suite_2026",
+      "sha256": "1adb5673758262806c14d5edec3c8b02dd6a338276132734bb0f5d0dd3322415",
+      "record_count": 266,
+      "frozen_at": "2026-09-16T14:36:20.641501+00:00",
+      "path": "data/ood/frozen-v4"
+    },
+    "conditions": {
+      "structure_only": {
+        "condition": "structure_only",
+        "seeds": 5,
+        "isot_held_out_accuracy": {
+          "mean": 0.8184,
+          "min": 0.8184,
+          "max": 0.8184,
+          "range": 0.0
+        },
+        "seed_variance": {
+          "lean_gap_pp": {
+            "mean": -14.2941,
+            "min": -14.2941,
+            "max": -14.2941,
+            "range": 0.0
+          },
+          "lean_left": {
+            "mean": 0.3971,
+            "min": 0.3971,
+            "max": 0.3971,
+            "range": 0.0
+          },
+          "lean_right": {
+            "mean": 0.54,
+            "min": 0.54,
+            "max": 0.54,
+            "range": 0.0
+          },
+          "whole_suite": {
+            "mean": 0.5639,
+            "min": 0.5639,
+            "max": 0.5639,
+            "range": 0.0
+          }
+        },
+        "publisher_bootstrap_95": {
+          "whole_suite": {
+            "low": 0.4526,
+            "high": 0.6693,
+            "draws_usable": 2000
+          },
+          "lean_left": {
+            "low": 0.2424,
+            "high": 0.5686,
+            "draws_usable": 2000
+          },
+          "lean_right": {
+            "low": 0.4073,
+            "high": 0.6875,
+            "draws_usable": 1997
+          },
+          "lean_gap_pp": {
+            "low": -36.878,
+            "high": 8.0393,
+            "draws_usable": 1997
+          }
+        },
+        "reading": "seed_variance is what refitting the model changes. publisher_bootstrap_95 resamples publishers with replacement and is the interval that bears on a claim about publishers; it is wide because the lean buckets hold few outlets, and that width is the honest width."
+      }
+    }
+  }
+}
