@@ -27,6 +27,7 @@ import argparse
 import hashlib
 import json
 import random
+import re
 import sys
 from collections import Counter, defaultdict
 from dataclasses import asdict, replace
@@ -59,6 +60,63 @@ def topic_from_url(url: str) -> str:
             if segment in names:
                 return topic
     return "unknown"
+
+
+# Pages a publisher serves from the same feeds and sitemaps as its journalism,
+# which are not journalism. A newsletter issue is a digest addressed to
+# subscribers; a solicitation page asks the reader for money. Both are the
+# publisher talking about itself, which is the one thing this corpus is built
+# to be free of, and neither is an article within the meaning of DATA.md.
+#
+# Detected by rule and applied to every document before any selection, rather
+# than by reading the audit and lifting out the ones that look wrong. Both
+# rules need two independent signals so that an article *about* newsletters or
+# *about* a charity appeal is not mistaken for one (D027).
+_NEWSLETTER_MENTIONS: Final = re.compile(
+    r"\bnewsletters?\b[\s\S]{0,400}?\bnewsletters?\b", re.IGNORECASE
+)
+# A digest addresses its reader about itself. An article about the newsletter
+# industry does not, and the mention count alone cannot tell them apart:
+# "Rivals expanded their own newsletter businesses" mentions it twice.
+_NEWSLETTER_ADDRESSES_READER: Final = re.compile(
+    r"\b(?:we|our|your|this)\b[^.\n]{0,40}\bnewsletters?\b", re.IGNORECASE
+)
+_SOLICITATION: Final = re.compile(
+    r"\b(?:tax[- ]deductible|501\(c\)\(?3\)?|charitable (?:gift|contribution)|"
+    r"donor[- ]advised|bequest)\b",
+    re.IGNORECASE,
+)
+_ASKS_FOR_MONEY: Final = re.compile(
+    r"\b(?:your (?:gift|donation|contribution)|make a (?:gift|donation)|"
+    r"mail a check|donate (?:now|today|monthly)|become a (?:member|supporter|donor))\b",
+    re.IGNORECASE,
+)
+
+
+def not_an_article(doc: Document) -> str | None:
+    """Why this document is not an article, or None if it is one.
+
+    Returns the reason rather than a boolean so the freeze can report what it
+    excluded and by which rule, instead of a single opaque count.
+    """
+    if _NEWSLETTER_MENTIONS.search(doc.text) and _NEWSLETTER_ADDRESSES_READER.search(doc.text):
+        return "newsletter_issue"
+    if _SOLICITATION.search(doc.text) and _ASKS_FOR_MONEY.search(doc.text):
+        return "solicitation"
+    return None
+
+
+def drop_non_articles(documents: list[Document]) -> tuple[list[Document], dict[str, int]]:
+    """Remove documents that are not articles, counting them by reason."""
+    kept: list[Document] = []
+    reasons: Counter[str] = Counter()
+    for doc in documents:
+        reason = not_an_article(doc)
+        if reason is None:
+            kept.append(doc)
+        else:
+            reasons[reason] += 1
+    return kept, dict(sorted(reasons.items()))
 
 
 def dedupe(documents: list[Document]) -> tuple[list[Document], int]:
@@ -143,7 +201,12 @@ def freeze(
 ) -> tuple[dict[str, list[dict[str, object]]], dict[str, object]]:
     """Return split records and the manifest entry describing them."""
     rng = random.Random(seed)  # noqa: S311 - seeded reproducible sampling, not cryptographic
-    unique, duplicates = dedupe(documents)
+    # Before dedupe and before balancing: a document that is not an article is
+    # not eligible for selection at all, so the balanced draw comes from a pool
+    # of articles rather than depending on whether the shuffle happened to
+    # discard one (D027).
+    articles, non_articles = drop_non_articles(documents)
+    unique, duplicates = dedupe(articles)
     balanced, balance = balance_partisan(unique, rng)
     splits = assign_splits(balanced, seed)
 
@@ -174,6 +237,7 @@ def freeze(
         "frozen": True,
         "frozen_at": datetime.now(UTC).isoformat(),
         "duplicates_removed": duplicates,
+        "non_articles_excluded": non_articles,
         "partisan_balance": balance,
         "splits": {
             "method": "grouped_by_domain",

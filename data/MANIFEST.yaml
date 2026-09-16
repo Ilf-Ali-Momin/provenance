@@ -219,8 +219,8 @@ corpora:
       canonical class counts exactly, because this mirror retains the subject
       and date columns that expose further leakage channels.
 
-  - id: ood_suite_2026_spread
-    name: Out of distribution evaluation suite, 2026 (spread)
+  - id: ood_suite_2026_v4
+    name: Out of distribution evaluation suite, 2026 (final)
     role: ood_suite
     purpose: Frozen English news articles published after the training snapshot, stratified
       by publisher type, for out of distribution evaluation only.
@@ -242,13 +242,13 @@ corpora:
       script: eval/ood_collection/run.py
       notes: Rerunning collects a different corpus; the frozen files are the suite.
     storage:
-      location: data/ood/frozen-v3 on a FileVault encrypted local disk
+      location: data/ood/frozen-v4 on a FileVault encrypted local disk
       region: 'OPEN OBLIGATION: not the EU region SECURITY.md control 6 requires'
       encrypted_at_rest: true
     record_count: 266
-    sha256: f7b361e57ec0553d75eb6dc50ebda7fd192b5f0cbd2b5a0c01a78274a8c9efbc
+    sha256: 1adb5673758262806c14d5edec3c8b02dd6a338276132734bb0f5d0dd3322415
     frozen: true
-    frozen_at: '2026-09-16T10:49:02.077985+00:00'
+    frozen_at: '2026-09-16T14:36:20.641501+00:00'
     splits:
       method: grouped_by_domain
       seed: 20260101
@@ -294,4 +294,4 @@ corpora:
         bylines, standalone photo credits and captions, licence notices, and links back into
         the publisher's own domains were added after this run's first audit (D026), which
         took flagged documents from 42 to 2.
-    notes: '{"duplicates_removed": 2, "partisan_balance": {"per_side": 68, "dropped_for_balance": 61}, "topic_unknown_rate": 0.9361, "cells_stratum_topic": {"national/politics": 1, "national/science": 1, "national/unknown": 71, "partisan/business": 1, "partisan/health": 1, "partisan/politics": 12, "partisan/science": 1, "partisan/unknown": 121, "regional/unknown": 27, "wire/unknown": 30}, "supersedes": "the 2026-09-11 freeze, 384 documents from a single day of news", "source_run": "data/ood/run-7800954-clean", "residue_after_audit": {"newsletter_issue": 1, "by_line": 1}, "residual_check": {"stratum_grouped_by_publisher": 0.5981, "stratum_majority_baseline": 0.5988, "publisher_identity": 0.3829, "publisher_identity_chance": 0.0821}, "under_target": "266 documents against the 400-600 the collection plan asks for"}'
+    notes: '{"duplicates_removed": 2, "partisan_balance": {"per_side": 68, "dropped_for_balance": 59}, "topic_unknown_rate": 0.9361, "cells_stratum_topic": {"national/politics": 1, "national/science": 1, "national/unknown": 71, "partisan/business": 1, "partisan/health": 1, "partisan/politics": 12, "partisan/science": 1, "partisan/unknown": 121, "regional/unknown": 27, "wire/unknown": 30}, "supersedes": "ood_suite_2026_spread (v3, 266 records, sha f7b361e5); and before it the 2026-09-11 freeze of 384 records from a single day of news", "source_run": "data/ood/run-7800954-clean", "residue_after_audit": {}, "residual_check": {"stratum_grouped_by_publisher": 0.5981, "stratum_majority_baseline": 0.5988, "publisher_identity": 0.3829, "publisher_identity_chance": 0.0821}, "under_target": "266 documents against the 400-600 the collection plan asks for; the pool is deliberately not widened (D028)", "non_articles_excluded": {"newsletter_issue": 1, "solicitation": 1}}'

@@ -13,7 +13,9 @@ from eval.ood_collection.freeze import (
     balance_partisan,
     corpus_hash,
     dedupe,
+    drop_non_articles,
     freeze,
+    not_an_article,
     topic_from_url,
 )
 
@@ -26,6 +28,7 @@ def doc(
     lean: str | None = "left",
     url: str = "",
     text_hash: str | None = None,
+    text: str = "body",
 ) -> Document:
     return Document(
         doc_id=f"doc_{domain}_{n}",
@@ -36,7 +39,7 @@ def doc(
         url=url or f"https://{domain}/politics/{n}",
         title=None,
         published="2026-03-01T00:00:00+00:00",
-        text="body",
+        text=text,
         text_sha256=text_hash or f"h_{domain}_{n}",
         markers_removed={},
         had_invisible=False,
@@ -169,3 +172,63 @@ def test_strata_that_cannot_reach_every_split_are_named() -> None:
     splits = entry["splits"]
     assert splits["strata_missing_a_split"] == ["wire"]  # type: ignore[index]
     assert splits["splits_per_stratum"]["regional"] == ["dev", "holdout", "train"]  # type: ignore[index]
+
+
+# --- non-article exclusion (D027) -------------------------------------------
+
+NEWSLETTER = (
+    "Want to stay on top of the science driving biotech today? Good morning. "
+    "Be sure to read all the way through the newsletter. We won't have a "
+    "newsletter next week, so enjoy the break."
+)
+DONATION = (
+    "[OUTLET] Media, Inc. is a registered 501(c)3 non-profit organization. "
+    "Your gift is tax-deductible. You can mail a check or money order to our "
+    "office, or donate monthly online."
+)
+ABOUT_NEWSLETTERS = (
+    "The company shut down its newsletter division on Tuesday, citing costs. "
+    "Rivals have expanded their own newsletter businesses over the same period."
+)
+ABOUT_A_CHARITY = (
+    "The foundation, a registered 501(c)3, disclosed the payment in a filing "
+    "reviewed by reporters. Its trustees declined to comment on the transfer."
+)
+
+
+def test_a_newsletter_issue_is_not_an_article() -> None:
+    assert not_an_article(doc("a.com", 1, text=NEWSLETTER)) == "newsletter_issue"
+
+
+def test_a_solicitation_page_is_not_an_article() -> None:
+    assert not_an_article(doc("a.com", 2, text=DONATION)) == "solicitation"
+
+
+def test_an_article_about_newsletters_survives() -> None:
+    """Mentioning the word twice is prose. A digest addresses its reader."""
+    assert not_an_article(doc("a.com", 3, text=ABOUT_NEWSLETTERS)) is None
+
+
+def test_an_article_about_a_charity_survives() -> None:
+    """One signal names a subject; the rule also needs the page to ask for money."""
+    assert not_an_article(doc("a.com", 4, text=ABOUT_A_CHARITY)) is None
+
+
+def test_non_articles_are_counted_by_reason() -> None:
+    docs = [
+        doc("a.com", 1, text=NEWSLETTER),
+        doc("a.com", 2, text=DONATION),
+        doc("a.com", 3, text=ABOUT_A_CHARITY),
+    ]
+    kept, reasons = drop_non_articles(docs)
+    assert len(kept) == 1
+    assert reasons == {"newsletter_issue": 1, "solicitation": 1}
+
+
+def test_the_freeze_excludes_them_before_selection() -> None:
+    """Excluded before dedupe and balance, so selection draws from articles only."""
+    docs = [doc("a.com", i, stratum="national", lean=None) for i in range(6)]
+    docs.append(doc("a.com", 99, stratum="national", lean=None, text=DONATION))
+    _, entry = freeze(docs)
+    assert entry["non_articles_excluded"] == {"solicitation": 1}
+    assert entry["record_count"] == 6
