@@ -1,0 +1,99 @@
+# The gate ROADMAP.md M1 specifies: ruff, mypy strict, pytest, pip-audit,
+# gitleaks, and the unpinned model reference check.
+#
+# Every one of these was run by hand during M0. That is how a verified
+# milestone rots: the checks pass on the day and nothing re-runs them. This
+# file is what makes the M0 report's verification table reproducible by
+# something other than the person who wrote it.
+#
+# Two deliberate choices.
+#
+# Jobs are separate rather than chained, so one failure does not mask the rest.
+# A run that reports "ruff failed" and nothing else hides whether the tests also
+# broke, which is the information most needed when a change is reverted.
+#
+# Nothing here downloads a model or a corpus. The ML extra is installed for type
+# checking only, and every test that would need weights or article text is
+# deselected by the `slow` marker. CI that reaches the network is CI that fails
+# for reasons unrelated to the change under test.
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: .
+
+jobs:
+  lint:
+    name: ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install --group dev
+      - run: ruff check --output-format=github .
+      - run: ruff format --check .
+
+  types:
+    name: mypy strict
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[ml]" --group dev
+      - run: mypy
+
+  tests:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[ml]" --group dev
+      - run: pytest -q
+
+  model-pins:
+    name: unpinned model references
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m tools.check_model_pins pipeline eval app tools
+
+  audit:
+    name: pip-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e "." --group dev
+      - run: pip-audit --strict --progress-spinner off
+
+  secrets:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

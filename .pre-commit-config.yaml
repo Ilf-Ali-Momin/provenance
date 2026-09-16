@@ -1,6 +1,9 @@
-# Pre-commit is the local half of the CI gate described in ROADMAP.md M1.
-# M0 installs ruff and gitleaks only; mypy, pytest, pip-audit and the unpinned
-# model reference check join CI at M1.
+# Pre-commit is the local half of the CI gate in .github/workflows/ci.yml.
+#
+# It runs the checks that are fast and need no network: ruff, gitleaks, and the
+# unpinned model reference check. mypy, pytest and pip-audit run in CI only -
+# they need the ML extra installed or an advisory database fetched, and a commit
+# hook slow enough to be bypassed with --no-verify is a hook that is bypassed.
 default_language_version:
   python: python3.12
 
@@ -16,3 +19,15 @@ repos:
     rev: v8.30.0
     hooks:
       - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: check-model-pins
+        name: unpinned model references
+        # The repo's interpreter, not PATH's: this hook imports project code
+        # and must run against the same environment the tests do. CI runs the
+        # same check as its own job, so a developer without .venv is still gated.
+        entry: .venv/bin/python -m tools.check_model_pins pipeline eval app tools
+        language: system
+        pass_filenames: false
+        types: [python]

@@ -24,6 +24,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 logger = logging.getLogger(__name__)
 
 MODEL_ID = "distilbert-base-uncased"
+# Pinned. RULES.md requires a base model identifier pinned to a revision hash,
+# and tools/check_model_pins.py enforces it; this reference was unpinned for the
+# whole of M0, so the recorded transformer numbers were produced against
+# whatever the default branch held on the day.
+MODEL_REVISION = "12040accade4e8a0f71eabdb258fecc2e7e948be"
 # Reduced from the full corpus at 256 tokens. The host is under heavy external
 # load (macOS software update, load average >150), which starved the full run
 # to roughly 36 seconds per step. These settings are stated in the writeup so
@@ -71,8 +76,10 @@ def run_one(
     tr, te = apply_condition(train, test, cond)
     tr = _subsample(tr, TRAIN_SUBSAMPLE, seed)
     te = _subsample(te, TEST_SUBSAMPLE, seed)
-    tok = AutoTokenizer.from_pretrained(MODEL_ID)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID, num_labels=2).to(device)
+    tok = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        MODEL_ID, num_labels=2, revision=MODEL_REVISION
+    ).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=LR)
 
     loader = DataLoader(_encode(tok, tr), batch_size=BATCH, shuffle=True)

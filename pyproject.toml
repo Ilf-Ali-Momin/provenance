@@ -20,6 +20,15 @@ dependencies = [
   # it does not strip datelines or bylines; pipeline/text/extract.py does, and
   # that is a construction rule rather than a tidying step (DATA.md).
   "trafilatura>=2.0",
+  # M1. All four are named explicitly in the context files rather than chosen
+  # here: ARCHITECTURE.md specifies "Flask runs under gunicorn with gthread
+  # workers" and "RQ workers run as separate containers", and RULES.md mandates
+  # "structured logging via `structlog`, JSON output". They are the milestone's
+  # stated stack, not an addition to it.
+  "flask>=3.1",
+  "structlog>=25.1",
+  "rq>=2.0",
+  "redis>=5.2",
 ]
 
 [project.optional-dependencies]
@@ -123,8 +132,10 @@ python_version = "3.12"
 strict = true
 # RULES.md mandates strict on app/ and pipeline/. eval/ is added here because
 # evaluation code ships as a deliverable (see context/DECISIONS.md D011).
-# app/ is added at M1 when the Flask skeleton exists.
-files = ["pipeline", "eval"]
+# app/ is added at M1 when the Flask skeleton exists. tools/ is checked because
+# check_model_pins.py is a CI gate: a type error there fails open, passing a
+# build it should have stopped.
+files = ["pipeline", "eval", "tools"]
 warn_unreachable = true
 disallow_any_unimported = true
 show_error_codes = true
