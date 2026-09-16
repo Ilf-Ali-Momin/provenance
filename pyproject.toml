@@ -132,10 +132,10 @@ python_version = "3.12"
 strict = true
 # RULES.md mandates strict on app/ and pipeline/. eval/ is added here because
 # evaluation code ships as a deliverable (see context/DECISIONS.md D011).
-# app/ is added at M1 when the Flask skeleton exists. tools/ is checked because
+# app/ joined at M1 with the Flask skeleton, closing out D011. tools/ is checked because
 # check_model_pins.py is a CI gate: a type error there fails open, passing a
 # build it should have stopped.
-files = ["pipeline", "eval", "tools"]
+files = ["app", "pipeline", "eval", "tools"]
 warn_unreachable = true
 disallow_any_unimported = true
 show_error_codes = true
