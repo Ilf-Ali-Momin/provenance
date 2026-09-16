@@ -30,3 +30,18 @@ class AppSettings(BaseSettings):
     # Readiness. A check that cannot answer within this budget is reported as
     # failing rather than holding the probe open.
     readiness_timeout_s: float = Field(default=2.0, gt=0)
+
+    # Queue. ARCHITECTURE.md: Redis backs the job queue, the response cache and
+    # the rate limit counters.
+    redis_url: str = "redis://127.0.0.1:6379/0"
+    queue_name: str = "fetch"
+    job_timeout_s: int = Field(default=60, gt=0)
+    # How long a completed result stays readable. It holds derived facts and a
+    # hash, never article text (D032), so this is a cache lifetime rather than
+    # a retention decision about personal data.
+    result_ttl_s: int = Field(default=1800, gt=0)
+
+    # Authentication. API.md: every endpoint except /health takes a bearer key.
+    # Empty means the API refuses every request rather than allowing every one,
+    # because an unset secret must never be the permissive case.
+    api_keys: tuple[str, ...] = ()

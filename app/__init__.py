@@ -21,9 +21,10 @@ from typing import Any
 import structlog
 from flask import Flask, Response, g, request
 
-from app import errors, health
+from app import api, errors, health
 from app.config import AppSettings
 from app.logging import configure
+from app.queue import Submitter
 
 REQUEST_ID_HEADER = "X-Request-ID"
 MAX_REQUEST_ID_CHARS = 64
@@ -47,7 +48,7 @@ def _incoming_request_id() -> str:
     return sanitise_request_id(request.headers.get(REQUEST_ID_HEADER, "")) or uuid.uuid4().hex
 
 
-def create_app(settings: AppSettings | None = None) -> Flask:
+def create_app(settings: AppSettings | None = None, queue: Submitter | None = None) -> Flask:
     settings = settings or AppSettings()
     configure(settings)
 
@@ -75,6 +76,17 @@ def create_app(settings: AppSettings | None = None) -> Flask:
 
     errors.register(app)
     app.register_blueprint(health.blueprint(settings))
+
+    # The queue is constructed here, not imported at module scope, so a test
+    # can pass its own and the app never opens a Redis connection it does not
+    # need. Readiness learns about Redis by the queue registering itself.
+    if queue is None:
+        from app.queue import RedisQueue
+
+        live = RedisQueue(settings)
+        health.register_check("redis", live.ping)
+        queue = live
+    app.register_blueprint(api.blueprint(settings, queue))
 
     logger.info("app_created", service=settings.service_name, environment=settings.environment)
     return app
