@@ -30,7 +30,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from pipeline.text.config import ExtractSettings
-from pipeline.text.extract import strip_publisher_markers
+from pipeline.text.extract import _host_of, strip_publisher_markers
 from pipeline.text.normalise import normalise
 
 from eval.ood_collection.collect import Document, document_id, load_outlet_names
@@ -49,7 +49,9 @@ def reclean(
     dropped = 0
 
     for doc in documents:
-        text, removed = strip_publisher_markers(doc.text, names_by_domain.get(doc.domain, ()))
+        text, removed = strip_publisher_markers(
+            doc.text, names_by_domain.get(doc.domain, ()), _host_of(doc.url)
+        )
         text = normalise(text)
         second_pass.update(removed)
         if len(text.strip()) < settings.min_article_chars:

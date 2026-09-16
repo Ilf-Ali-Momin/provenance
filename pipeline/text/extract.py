@@ -27,6 +27,7 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Final
+from urllib.parse import urlsplit
 
 import trafilatura
 
@@ -65,6 +66,32 @@ _BYLINE: Final = re.compile(
 # as "BREAKING:" or "UPDATE:" are not mistaken for an author.
 _CAPS_BYLINE: Final = re.compile(
     r"^\s*[A-Z][A-Z'\u2019-]+(?:\s+[A-Z][A-Z'\u2019-]+){1,3}:\s+",
+    re.MULTILINE,
+)
+
+# Two byline shapes the "By Name" rule above misses, both found by auditing the
+# spread run on 2026-09-15.
+#
+# An institutional byline names an organisation, not a person, so it has no
+# second capitalised surname to match: "By University of Oregon School of
+# Journalism and Communication". The whole line must be title case words and
+# lowercase connectors with no sentence punctuation, which is what separates it
+# from prose that happens to open "By Friday afternoon, Hezbollah issued ...".
+_BYLINE_LINE: Final = re.compile(
+    r"^\s*By\s+(?:[A-Z][\w.'\u2019-]*|of|and|for|the|at|de|von)"
+    r"(?:\s+(?:[A-Z][\w.'\u2019-]*|of|and|for|the|at|de|von))*\s*$",
+    re.MULTILINE,
+)
+
+# A byline whose role clause runs past the 60 characters the rule above allows:
+# "By Aishwarya Balamukundan, Senior Director, Research and Advisory". Keyed on
+# a job title rather than on length, so a prose sentence opening "By Friday
+# afternoon, Hezbollah had issued a statement" cannot match however long it is.
+_BYLINE_ROLE: Final = re.compile(
+    r"^\s*By\s+[A-Z][\w.'\u2019-]*(?:\s+[A-Z][\w.'\u2019-]*){0,4}\s*,\s*"
+    r"(?:Senior|Chief|Deputy|Associate|Assistant|Staff|Managing|Executive|Global|"
+    r"Editor|Editors|Reporter|Correspondent|Writer|Journalist|Columnist|Director|"
+    r"Contributor|Analyst|Anchor|Producer|Photographer)\b[^\n]*$",
     re.MULTILINE,
 )
 
@@ -202,6 +229,35 @@ _PHOTO_CREDIT_PAREN: Final = re.compile(
     re.IGNORECASE,
 )
 EMAIL_MASK: Final = "[EMAIL]"
+URL_MASK: Final = "[URL]"
+
+# A photo credit that is its own sentence rather than a parenthetical:
+# "Illustration by Noah Hickey/[OUTLET]." A capitalised name must follow the
+# credit word, so "Illustration by the artist shows ..." stays as prose.
+_PHOTO_CREDIT_LINE: Final = re.compile(
+    r"(?:^|(?<=[.!?]\s))(?:Photos?|Photograph|Images?|Illustration)"
+    r"\s+(?:by|credit|courtesy of)\s*:?\s*[A-Z][^\n.]{0,90}\.?\s*",
+    re.MULTILINE,
+)
+
+# A caption left behind as its own line: "Photo: Vessel in the Strait of
+# Hormuz". No credit word follows the label, so the credit rule above does not
+# see it. A capital must follow the colon, which keeps prose such as "the
+# photo: a blurred figure" out of it.
+_CAPTION_LABEL: Final = re.compile(
+    r"(?:^|(?<=[.!?]\s)|(?<=\|\s))(?:Photos?|Images?|Photograph|Illustration|Caption)"
+    r"\s*:\s*[A-Z][^\n.]{0,90}\.?\s*",
+    re.MULTILINE,
+)
+
+# A licence notice carried inside a sentence, so the line anchored boilerplate
+# rule never sees it: "... is used herein with permission. All rights
+# reserved." Found on syndicated analyst copy in the spread run.
+_PERMISSION_NOTICE: Final = re.compile(
+    r"(?:^|(?<=[.!?]\s))[^.!?\n]{0,120}?"
+    r"(?:used herein with permission|all rights reserved)[^.!?\n]*[.!?]?\s*",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 # Self promotion and commerce boilerplate, from the re-cleaned full run audit:
 # "You can sign up to get Down Range at [OUTLET]/downrange" (Breitbart), "When
@@ -243,6 +299,15 @@ def strip_contact_and_credit_lines(text: str) -> tuple[str, dict[str, int]]:
     text, n = _PHOTO_CREDIT_PAREN.subn("", text)
     if n:
         counts["photo_credit"] = n
+    text, n = _PHOTO_CREDIT_LINE.subn("", text)
+    if n:
+        counts["photo_credit"] = counts.get("photo_credit", 0) + n
+    text, n = _CAPTION_LABEL.subn("", text)
+    if n:
+        counts["photo_credit"] = counts.get("photo_credit", 0) + n
+    text, n = _PERMISSION_NOTICE.subn("", text)
+    if n:
+        counts["permission_notice"] = n
     text, n = _SPONSOR_LINE.subn("", text)
     if n:
         counts["membership_or_sponsor"] = n
@@ -297,6 +362,74 @@ def strip_self_disclosures(text: str) -> tuple[str, int]:
     return "\n".join(lines_out), removed
 
 
+_URL: Final = re.compile(
+    r"(?:https?://|www\.)[^\s)\]}>\"\u2019']+|\b[\w-]+(?:\.[\w-]+){1,3}/[^\s)\]}>\"\u2019']+"
+)
+_MIN_LABEL: Final = 3
+_MIN_COMPOUND_TAIL: Final = 4
+
+
+def _host_of(url: str) -> str:
+    """The host of a URL written with or without a scheme."""
+    candidate = url if "://" in url else f"//{url}"
+    return urlsplit(candidate).netloc.lower().removeprefix("www.")
+
+
+def self_link_labels(host: str) -> tuple[str, str]:
+    """The publisher host and the bare label a self link may be built from.
+
+    `bbc.com` gives `bbc`, which is what `bbc.in` and `bbclearningenglish.com`
+    are both built from. The label is what makes those recognisable as the same
+    publisher without a registry of every domain an outlet owns.
+    """
+    host = host.lower().removeprefix("www.")
+    label = host.split(".")[0]
+    return host, label
+
+
+def mask_self_links(text: str, host: str) -> tuple[str, int]:
+    """Replace links to the publisher's own sites with a constant token.
+
+    A URL into the publisher's own domain is publisher identity as surely as
+    its name in running text is, and the name mask never catches it: hosts are
+    lowercase and unspaced, so `bbc.co.uk/learningenglish/newsletters` survives
+    a case sensitive match on "BBC". The spread run's audit found seven such
+    documents.
+
+    A host counts as the publisher's when it is the publisher's host, a
+    subdomain of it, or a domain built from the same leading label, which is
+    how `bbc.in` and `bbclearningenglish.com` are reached. That last test can
+    over-match: a publisher whose label is a common word could claim an
+    unrelated host. The failure is deliberately in the conservative direction,
+    since masking a third party link costs the corpus a little content while
+    leaving one in costs it the thing the corpus exists to remove. The label
+    floor and the compound tail length keep the over-match narrow.
+    """
+    host, label = self_link_labels(host)
+    if len(label) < _MIN_LABEL:
+        return text, 0
+
+    def is_self(url: str) -> bool:
+        found = _host_of(url)
+        if found == host or found.endswith(f".{host}"):
+            return True
+        first = found.split(".")[0]
+        return first == label or (
+            first.startswith(label) and len(first) - len(label) >= _MIN_COMPOUND_TAIL
+        )
+
+    total = 0
+
+    def replace(match: re.Match[str]) -> str:
+        nonlocal total
+        if not is_self(match.group(0)):
+            return match.group(0)
+        total += 1
+        return URL_MASK
+
+    return _URL.sub(replace, text), total
+
+
 def mask_outlet_names(text: str, names: Sequence[str]) -> tuple[str, int]:
     """Replace a publisher's own names with a constant token.
 
@@ -308,7 +441,20 @@ def mask_outlet_names(text: str, names: Sequence[str]) -> tuple[str, int]:
     """
     total = 0
     for name in sorted(set(names), key=len, reverse=True):
-        pattern = re.compile(r"(?<![\w.@])" + re.escape(name) + r"(?![\w])")
+        words = name.split()
+        if len(words) == 2 and words[0].lower() == "the":
+            # Only the article's case is relaxed. outlet_names.yaml records
+            # "the Post" and "the Monitor" lowercase, so a case sensitive match
+            # missed every sentence opening "The Post's broader goal ..." - four
+            # documents in the spread run. The audit already relaxed it here and
+            # the mask did not, which is why the audit could see what the mask
+            # had left behind. The cost is that a geographic "the Atlantic" is
+            # masked along with the outlet; losing a place name is the cheaper
+            # error than leaving publisher identity in the corpus.
+            body = re.escape(words[1])
+            pattern = re.compile(r"(?<![\w.@])(?i:the)\s+" + body + r"(?![\w])")
+        else:
+            pattern = re.compile(r"(?<![\w.@])" + re.escape(name) + r"(?![\w])")
         text, count = pattern.subn(OUTLET_MASK, text)
         total += count
     return text, total
@@ -409,13 +555,17 @@ class ExtractedArticle:
 
 
 def strip_publisher_markers(
-    text: str, outlet_names: Sequence[str] = ()
+    text: str, outlet_names: Sequence[str] = (), self_host: str | None = None
 ) -> tuple[str, dict[str, int]]:
     """Remove datelines, bylines and residual boilerplate.
 
     Returns the cleaned text and a count of what each rule removed. Applied
     line by line for datelines, because trafilatura may join the byline and
     the dateline onto the same line as the headline.
+
+    `self_host` is the publisher's own host, used to mask links back into its
+    own sites. It is optional because the rule can only run where the document
+    URL is known, which is every collection path but not every caller.
     """
     counts: dict[str, int] = {}
 
@@ -425,6 +575,10 @@ def strip_publisher_markers(
 
     text, n = _BYLINE.subn("", text)
     _count("byline", n)
+    text, n = _BYLINE_LINE.subn("", text)
+    _count("byline", n)
+    text, n = _BYLINE_ROLE.subn("", text)
+    _count("byline", n)
     text, n = _CAPS_BYLINE.subn("", text)
     _count("caps_byline", n)
     text, n = _BOILERPLATE.subn("", text)
@@ -433,6 +587,9 @@ def strip_publisher_markers(
     _count("newsletter_promo", n)
     text, n = strip_newsletter_widgets(text)
     _count("newsletter_promo", n)
+    if self_host:
+        text, n = mask_self_links(text, self_host)
+        _count("self_link", n)
     if outlet_names:
         text, n = mask_outlet_names(text, outlet_names)
         _count("outlet_name", n)
@@ -491,7 +648,7 @@ def extract_article(
 
     meta = trafilatura.extract_metadata(html)
     text = normalise(text)
-    text, removed = strip_publisher_markers(text, outlet_names)
+    text, removed = strip_publisher_markers(text, outlet_names, _host_of(url) if url else None)
     text = normalise(text)  # collapse whatever the removals left behind
 
     # A page with no article still yields its navigation text. Without this

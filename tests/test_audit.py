@@ -58,7 +58,7 @@ def test_marker_residue_is_counted_per_document_with_snippets() -> None:
     residue = report["by_publisher"]["vox.com"]["documents_with_residue"]  # type: ignore[index]
     assert residue["wire_tag"] == 1
     assert residue["photo_credit"] == 1
-    assert residue["newsletter"] == 1
+    assert residue["newsletter_promo"] == 1
     snippets = report["by_publisher"]["vox.com"]["snippets"]  # type: ignore[index]
     assert all(len(s) <= 80 for group in snippets.values() for s in group)
 
@@ -86,3 +86,55 @@ def test_real_markers_are_still_flagged() -> None:
     assert residue["own_name_unmasked"] == 1
     assert residue["photo_credit"] == 1
     assert residue["copyright"] == 1
+
+
+# --- precision fixes from the spread run, 2026-09-15 ------------------------
+
+
+def _hits(text: str, names: dict[str, tuple[str, ...]] | None = None) -> dict[str, int]:
+    report = audit([_doc("example.com", text)], names or {})
+    residue = report["documents_with_residue"]
+    assert isinstance(residue, dict)
+    return residue
+
+
+def test_a_weekday_sentence_is_not_reported_as_a_byline() -> None:
+    assert "by_line" not in _hits("By Friday afternoon, Hezbollah had issued a statement.")
+    assert "by_line" in _hits("By Michaila Byrne\nThe report says.")
+
+
+def test_an_acronym_expansion_is_not_reported_as_a_wire_tag() -> None:
+    """Advanced Placement (AP) is not the Associated Press."""
+    assert "wire_tag" not in _hits("Advanced Placement (AP) and Baccalaureate courses count.")
+    assert "wire_tag" not in _hits("according to The Associated Press (AP).")
+    assert "wire_tag" in _hits("LONDON (Reuters) - Shares fell on Tuesday.")
+
+
+def test_prose_about_newsletters_is_not_reported_as_boilerplate() -> None:
+    assert "newsletter_promo" not in _hits("It competes with notes from friends, newsletters.")
+    assert "newsletter_promo" in _hits("Sign up for our newsletter to get it first.")
+
+
+def test_a_document_that_is_itself_a_newsletter_is_reported_separately() -> None:
+    """A collection defect, not a stripping one, so it gets its own name."""
+    issue = "Read all the way through the newsletter. We won't have a newsletter next week."
+    assert "newsletter_issue" in _hits(issue)
+    assert "newsletter_issue" not in _hits("It competes with notes from friends, newsletters.")
+
+
+def test_a_proper_compound_is_not_the_outlet_naming_itself() -> None:
+    names = {"example.com": ("The Atlantic",)}
+    assert "own_name_unmasked" not in _hits(
+        "a year without a hurricane in the Atlantic Ocean.", names
+    )
+    assert "own_name_unmasked" in _hits("You can subscribe to the Atlantic today.", names)
+
+
+def test_a_link_back_into_the_publishers_own_site_is_reported() -> None:
+    """Checked against the document's host, so a cited third party link is not."""
+    own = audit(
+        [_doc("bbc.com", "More at https://www.bbc.co.uk/learningenglish/newsletters here.")], {}
+    )
+    other = audit([_doc("bbc.com", "The filing is at https://supremecourt.gov/o/1.pdf.")], {})
+    assert "self_link" in own["documents_with_residue"]  # type: ignore[operator]
+    assert "self_link" not in other["documents_with_residue"]  # type: ignore[operator]

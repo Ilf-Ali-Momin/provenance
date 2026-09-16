@@ -28,22 +28,51 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Final
 
+from pipeline.text.extract import mask_self_links
+
 from eval.ood_collection.collect import Document, load_outlet_names
 from eval.ood_collection.run import load_documents
 
 SNIPPET_CHARS: Final = 80
 MAX_SNIPPETS: Final = 3
 
+# Dates and weekdays open a great many English sentences with "By": "By Friday
+# afternoon, Hezbollah had issued a statement." Excluding them is a precision
+# fix, not a relaxation: every one of these flagged prose in the spread run and
+# none of them flagged an attribution.
+_NOT_A_NAME: Final = (
+    r"(?!(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|"
+    r"January|February|March|April|May|June|July|August|September|October|"
+    r"November|December|Then|Now|Comparison|Contrast|Then)\b)"
+)
+
 RESIDUE: Final[dict[str, re.Pattern[str]]] = {
-    "by_line": re.compile(r"^\s*By\s+[A-Z][a-z]+", re.MULTILINE),
+    "by_line": re.compile(r"^\s*By\s+" + _NOT_A_NAME + r"[A-Z][a-z]+", re.MULTILINE),
     "caps_name_colon": re.compile(r"^[A-Z][A-Z'-]+(?:\s+[A-Z][A-Z'-]+){1,3}:\s", re.MULTILINE),
-    "wire_tag": re.compile(r"\((?:AP|Reuters|AFP|CNN|UPI|Bloomberg)\)"),
+    # The dash is what makes this a wire dateline rather than a mention. The
+    # bare parenthesis flagged "according to The Associated Press (AP)", which
+    # is in-text attribution, and "Advanced Placement (AP)", which is not the
+    # wire service at all.
+    "wire_tag": re.compile(r"\((?:AP|Reuters|AFP|CNN|UPI|Bloomberg)\)\s*[-–—]"),
     # Capitalised label then a capitalised name. The looser first version flagged
     # "the same image: a World Trade Center tower", which is prose.
     "photo_credit": re.compile(
         r"\b(?:Photo|Photograph|Image|Illustration)(?:\s+credit)?\s*(?::|by)\s*[A-Z][a-z]+"
     ),
-    "newsletter": re.compile(r"\bnewsletters?\b", re.I),
+    # Split in two. The bare word flagged "notes from friends, newsletters, and
+    # spam", which is prose about newsletters. These are the two things worth
+    # knowing instead: a subscription pitch left in the text, and a document
+    # that is itself a newsletter issue rather than an article. The second is a
+    # collection defect, not a stripping one, and is named separately so the
+    # two are not fixed by the same change.
+    "newsletter_promo": re.compile(
+        r"(?:subscribe|sign\s?up|signup)[^.\n]{0,40}\bnewsletters?\b"
+        r"|\bnewsletters?\b[^.\n]{0,40}(?:in your inbox|delivered|every (?:morning|week|day))",
+        re.I,
+    ),
+    # Two mentions close together. One mention is prose about newsletters; a
+    # document that keeps returning to "the newsletter" is a newsletter issue.
+    "newsletter_issue": re.compile(r"\bnewsletters?\b[\s\S]{0,400}?\bnewsletters?\b", re.I),
     "follow_us": re.compile(r"\bfollow (?:us|@\w+)\b", re.I),
     # A notice, not the word. The first version flagged "sued OpenAI for
     # copyright violations", which is reporting.
@@ -62,7 +91,11 @@ def _name_pattern(name: str) -> re.Pattern[str]:
     """
     words = name.split()
     if len(words) == 2 and words[0].lower() == "the":
-        return re.compile(r"(?<![\w.])(?i:the)\s+" + re.escape(words[1]) + r"(?![\w])")
+        # Not followed by another capitalised word: "the Atlantic Ocean" and
+        # "the Globe Theatre" are proper compounds, not the outlet naming
+        # itself. A publisher whose real self name is two words past "the"
+        # lists that full name in outlet_names.yaml instead.
+        return re.compile(r"(?<![\w.])(?i:the)\s+" + re.escape(words[1]) + r"(?![\w])(?!\s+[A-Z])")
     return re.compile(r"(?<![\w.])" + re.escape(name) + r"(?![\w])", re.IGNORECASE)
 
 
@@ -94,6 +127,15 @@ def audit(documents: list[Document], outlet_names: dict[str, tuple[str, ...]]) -
                     hits[name] += 1
                     if len(snippets[name]) < MAX_SNIPPETS:
                         snippets[name].append(_snippet(doc.text, match.start()))
+            # A link back into the publisher's own site. Checked against the
+            # document's own host rather than by a pattern: a pattern can only
+            # see that a URL is present, which flags every third party link
+            # the article legitimately cites.
+            _, self_links = mask_self_links(doc.text, doc.domain)
+            if self_links:
+                hits["self_link"] += 1
+                if len(snippets["self_link"]) < MAX_SNIPPETS:
+                    snippets["self_link"].append(_snippet(doc.text, 0))
             for pattern in name_patterns:
                 match = pattern.search(doc.text)
                 if match:

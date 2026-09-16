@@ -219,13 +219,13 @@ corpora:
       canonical class counts exactly, because this mirror retains the subject
       and date columns that expose further leakage channels.
 
-  - id: ood_suite_2026
-    name: Out of distribution evaluation suite, 2026
+  - id: ood_suite_2026_spread
+    name: Out of distribution evaluation suite, 2026 (spread)
     role: ood_suite
     purpose: Frozen English news articles published after the training snapshot, stratified
       by publisher type, for out of distribution evaluation only.
     source_url: eval/ood_collection/sources.yaml
-    access_date: '2026-09-11'
+    access_date: '2026-09-15'
     snapshot_date: '2026-01-01'
     publisher: many; see sources.yaml and the document records
     licence: publisher copyright; not licensed for redistribution
@@ -242,23 +242,23 @@ corpora:
       script: eval/ood_collection/run.py
       notes: Rerunning collects a different corpus; the frozen files are the suite.
     storage:
-      location: data/ood/frozen on a FileVault encrypted local disk
+      location: data/ood/frozen-v3 on a FileVault encrypted local disk
       region: 'OPEN OBLIGATION: not the EU region SECURITY.md control 6 requires'
       encrypted_at_rest: true
-    record_count: 384
-    sha256: 9c59a053dfdd2214c2fe8d7749adb19aa6f4127510aaafbbb0d99676175c4a24
+    record_count: 266
+    sha256: f7b361e57ec0553d75eb6dc50ebda7fd192b5f0cbd2b5a0c01a78274a8c9efbc
     frozen: true
-    frozen_at: '2026-09-11T20:52:09.010531+00:00'
+    frozen_at: '2026-09-16T10:49:02.077985+00:00'
     splits:
       method: grouped_by_domain
       seed: 20260101
-      train: 219
-      dev: 93
-      frozen_holdout: 72
+      train: 159
+      dev: 80
+      frozen_holdout: 27
       domains_per_split:
-        train: 18
-        dev: 7
-        holdout: 6
+        train: 25
+        dev: 9
+        holdout: 7
       domains_in_more_than_one_split: []
       splits_per_stratum:
         national:
@@ -286,13 +286,12 @@ corpora:
         at eval/ood_collection/erase.py. Storage is NOT in an EU region as DATA.md
         describes; see section 5 of the balancing test.
     normalisation:
-      extraction_pipeline: 2fbca13+reclean:3489893
+      extraction_pipeline: 7800954+reclean
       identical_across_strata: true
       publisher_markers_stripped: true
       notes: Datelines, bylines, boilerplate, newsletter promotions, own outlet names and self
-        disclosures removed per D018; English only per D020.
-    notes: '{"duplicates_removed": 1, "partisan_balance": {"per_side": 127, "dropped_for_balance":
-      35}, "topic_unknown_rate": 0.8802, "cells_stratum_topic": {"national/business": 1, "national/unknown":
-      39, "partisan/business": 5, "partisan/health": 2, "partisan/politics": 26, "partisan/science":
-      1, "partisan/unknown": 220, "regional/business": 7, "regional/health": 2, "regional/politics":
-      2, "regional/unknown": 64, "wire/unknown": 15}}'
+        disclosures removed per D018; English only per D020. Institutional and long-role
+        bylines, standalone photo credits and captions, licence notices, and links back into
+        the publisher's own domains were added after this run's first audit (D026), which
+        took flagged documents from 42 to 2.
+    notes: '{"duplicates_removed": 2, "partisan_balance": {"per_side": 68, "dropped_for_balance": 61}, "topic_unknown_rate": 0.9361, "cells_stratum_topic": {"national/politics": 1, "national/science": 1, "national/unknown": 71, "partisan/business": 1, "partisan/health": 1, "partisan/politics": 12, "partisan/science": 1, "partisan/unknown": 121, "regional/unknown": 27, "wire/unknown": 30}, "supersedes": "the 2026-09-11 freeze, 384 documents from a single day of news", "source_run": "data/ood/run-7800954-clean", "residue_after_audit": {"newsletter_issue": 1, "by_line": 1}, "residual_check": {"stratum_grouped_by_publisher": 0.5981, "stratum_majority_baseline": 0.5988, "publisher_identity": 0.3829, "publisher_identity_chance": 0.0821}, "under_target": "266 documents against the 400-600 the collection plan asks for"}'

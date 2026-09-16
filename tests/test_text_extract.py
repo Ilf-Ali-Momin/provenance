@@ -9,7 +9,11 @@ to document. Each case is a form real wire copy actually uses.
 from __future__ import annotations
 
 import pytest
-from pipeline.text.extract import extract_article, strip_publisher_markers
+from pipeline.text.extract import (
+    extract_article,
+    mask_self_links,
+    strip_publisher_markers,
+)
 
 DATELINES = [
     "LONDON (Reuters) - Body follows.",
@@ -443,3 +447,101 @@ def test_domain_inside_an_email_address_is_not_masked() -> None:
     text, n = mask_outlet_names("write to jklein@breitbart.com today", ["breitbart.com"])
     assert n == 0
     assert text == "write to jklein@breitbart.com today"
+
+
+# --- rules added after the spread run audit, 2026-09-15 ---------------------
+
+
+def test_institutional_byline_is_removed() -> None:
+    """No surname to match, so the "By Name Name" rule never saw it."""
+    text = "By University of Oregon School of Journalism and Communication\nThe report says."
+    out, counts = strip_publisher_markers(text)
+    assert "University of Oregon" not in out
+    assert counts["byline"] == 1
+
+
+def test_a_sentence_opening_with_a_weekday_is_not_a_byline() -> None:
+    """The rule above must not eat prose."""
+    text = "By Friday afternoon, Hezbollah had issued a statement.\nMore followed."
+    out, counts = strip_publisher_markers(text)
+    assert "Hezbollah had issued a statement" in out
+    assert "byline" not in counts
+
+
+def test_a_byline_with_a_long_role_is_removed() -> None:
+    text = "By Aishwarya Balamukundan, Senior Director of Research and Advisory\nText follows."
+    out, counts = strip_publisher_markers(text)
+    assert "Aishwarya" not in out
+    assert counts["byline"] == 1
+
+
+def test_photo_credit_as_its_own_sentence_is_removed() -> None:
+    text = "The order stands. Illustration by Noah Hickey. The piece continues."
+    out, counts = strip_publisher_markers(text)
+    assert "Noah Hickey" not in out
+    assert counts["photo_credit"] == 1
+
+
+def test_illustration_in_prose_survives() -> None:
+    text = "Illustration by the artist shows a ship in the strait."
+    out, _ = strip_publisher_markers(text)
+    assert "artist shows a ship" in out
+
+
+def test_a_permission_notice_inside_a_sentence_is_removed() -> None:
+    """Line anchored boilerplate never saw this: it sits mid paragraph."""
+    text = "The chart is used herein with permission. All rights reserved. Growth slowed."
+    out, counts = strip_publisher_markers(text)
+    assert "all rights reserved" not in out.lower()
+    assert "Growth slowed" in out
+    assert counts["permission_notice"] >= 1
+
+
+def test_self_links_are_masked_including_sibling_domains() -> None:
+    """Hosts are lowercase and unspaced, so the name mask never catches them."""
+    text = (
+        "Visit https://www.bbc.co.uk/learningenglish/newsletters for more, "
+        "or bbclearningenglish.com/programmes, or https://bbc.in/newscast."
+    )
+    out, n = mask_self_links(text, "bbc.com")
+    assert "bbc" not in out.lower()
+    assert n == 3
+
+
+def test_a_third_party_link_is_left_alone() -> None:
+    text = "The filing is at https://www.supremecourt.gov/opinions/24pdf/23-1.pdf today."
+    out, n = mask_self_links(text, "bbc.com")
+    assert "supremecourt.gov" in out
+    assert n == 0
+
+
+def test_a_short_label_masks_nothing() -> None:
+    """Below the floor the compound test would match half the web."""
+    _, n = mask_self_links("See https://upside.example.com/x now.", "up.com")
+    assert n == 0
+
+
+def test_a_caption_label_without_a_credit_word_is_removed() -> None:
+    text = "Never miss a moment. Photo: Vessel in the Strait of Hormuz. The report continues."
+    out, counts = strip_publisher_markers(text)
+    assert "Strait of Hormuz" not in out
+    assert counts["photo_credit"] == 1
+
+
+def test_a_colon_in_prose_is_not_a_caption() -> None:
+    out, _ = strip_publisher_markers("He described the photo: a blurred figure on a roof.")
+    assert "blurred figure" in out
+
+
+def test_the_article_case_is_relaxed_when_masking_a_two_word_self_name() -> None:
+    """outlet_names.yaml records "the Post"; sentences open "The Post"."""
+    text = "The Post's broader goal is stated. Readers of the Post know it."
+    out, n = mask_outlet_names(text, ("the Post",))
+    assert "Post" not in out
+    assert n == 2
+
+
+def test_relaxing_the_article_does_not_relax_the_name() -> None:
+    out, n = mask_outlet_names("They walked the post road at dawn.", ("the Post",))
+    assert "post road" in out
+    assert n == 0
