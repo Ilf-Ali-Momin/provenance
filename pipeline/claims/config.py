@@ -19,6 +19,12 @@ class ExtractorSettings(BaseSettings):
     # the first default here was llama-3.3-70b-versatile, which this key cannot
     # reach, and the request failed with model_not_found.
     model: str = "openai/gpt-oss-120b"
+    # A claim longer than this is not a claim. The cap is what keeps "derived
+    # claim" from becoming "the article under another name" once claims reach
+    # storage: without it a single span of start=0, end=len(source) is kept,
+    # and DATA.md's permission for derived claims in storage would cover the
+    # whole document (D039).
+    max_claim_chars: int = Field(default=400, gt=0)
     prompt_name: str = "claim_extraction.v1.md"
     # Deterministic by default: EVALUATION.md runs the same evaluation against
     # every prompt revision, and a sampled extractor would confound a prompt

@@ -30,6 +30,7 @@ from pipeline.claims.detect import detect
 from pipeline.claims.prompt import build_messages, load_prompt, new_delimiter
 from pipeline.claims.schema import Claim, ClaimType, RawExtraction, claim_id
 from pipeline.errors import ProvenanceError
+from pipeline.text.normalise import normalise
 
 logger = structlog.get_logger(__name__)
 HTTP_TOO_MANY_REQUESTS: Final = 429
@@ -165,7 +166,12 @@ def _post_once(body: dict[str, Any], settings: ExtractorSettings) -> str:
     return str(content)
 
 
-def validate_offsets(raw: RawExtraction, source: str, version: str) -> tuple[list[Claim], int]:
+def validate_offsets(
+    raw: RawExtraction,
+    source: str,
+    version: str,
+    max_claim_chars: int | None = None,
+) -> tuple[list[Claim], int]:
     """Keep claims whose spans resolve; drop the rest. Returns (claims, dropped).
 
     This is the boundary an injection would have to escape and cannot. The text
@@ -177,6 +183,11 @@ def validate_offsets(raw: RawExtraction, source: str, version: str) -> tuple[lis
     dropped = 0
     for item in raw.claims:
         if item.end > len(source):
+            dropped += 1
+            continue
+        if max_claim_chars is not None and item.end - item.start > max_claim_chars:
+            # Dropped, not truncated: a shortened claim says something the
+            # model did not select, and the offsets would no longer name it.
             dropped += 1
             continue
         raw_slice = source[item.start : item.end]
@@ -213,6 +224,19 @@ def extract_claims(
     """Extract claims from one passage. Returns the claims and a provenance record."""
     settings = settings or ExtractorSettings()
     completion = completion or groq_completion
+
+    # Control 2's second layer, applied here rather than assumed upstream.
+    # `extract_article` already normalises, so on the pipeline path this is a
+    # no-op - `normalise` is idempotent. But this function was callable with
+    # raw text, and a caller who did not know that handed zero width and
+    # bidirectional override characters straight to the model. Depending on a
+    # precondition nobody states is how a control quietly stops applying.
+    #
+    # Normalising here also keeps offsets honest: the model indexes the text it
+    # was shown, so the text it was shown has to be the text the offsets are
+    # resolved against.
+    source = normalise(source)
+
     prompt_text, version = load_prompt(settings.prompt_name)
     delimiter = new_delimiter()
 
@@ -231,7 +255,7 @@ def extract_claims(
         logger.warning("extraction_unparseable", version=version, detail=type(exc).__name__)
         return [], {"extractor_version": version, "claims": 0, "dropped": 0, "unparseable": True}
 
-    claims, dropped = validate_offsets(raw, source, version)
+    claims, dropped = validate_offsets(raw, source, version, settings.max_claim_chars)
     if dropped:
         logger.info("offsets_dropped", count=dropped, version=version)
     return claims, {

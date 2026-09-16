@@ -111,3 +111,75 @@ def test_the_queue_payload_is_a_model_not_a_dict() -> None:
     assert FetchRequest.model_validate({"analysis_id": "x", "url": "https://e.com"}).url
     with pytest.raises(ValueError, match="analysis_id"):
         FetchRequest.model_validate({"url": "https://e.com"})
+
+
+# --- claim extraction inside the job (M2) -----------------------------------
+
+
+def test_claims_reach_the_outcome_with_their_extractor_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DATA.md permits derived claims in storage; this is that exception."""
+    _install(monkeypatch, _article())
+    monkeypatch.setattr(
+        mod,
+        "extract_claims",
+        lambda text: (
+            [
+                mod.Claim(
+                    claim_id="cl_1",
+                    text="The committee met",
+                    start=0,
+                    end=17,
+                    type="factual_assertion",
+                    extractor_version="v1:abc",
+                )
+            ],
+            {"extractor_version": "v1:abc"},
+        ),
+    )
+    outcome = fetch_and_extract(REQUEST, robots=StubRobots())  # type: ignore[arg-type]
+    assert len(outcome.claims) == 1
+    assert outcome.extractor_version == "v1:abc"
+    assert outcome.extractor_error is None
+
+
+def test_an_unavailable_extractor_degrades_to_the_rule_based_one(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """D004: the pipeline degrades rather than fails, and says which ran."""
+    from pipeline.claims.extract import ExtractorUnavailableError
+
+    # A passage the rule based extractor can actually work on. The default
+    # fixture is one sentence repeated, with no number and no mid-sentence
+    # proper noun, so the fallback correctly finds nothing in it - which makes
+    # it the wrong text for testing that the fallback ran.
+    findable = ExtractedArticle(
+        text="Some 2,400 homes were flooded across three counties on Tuesday.",
+        title="Floods",
+        published="2026-03-01",
+        removed={},
+        had_invisible=False,
+        declared_language="en",
+        english_ratio=0.4,
+    )
+    _install(monkeypatch, findable)
+
+    def unavailable(text: str) -> tuple[list, dict]:
+        raise ExtractorUnavailableError("HTTP 503")
+
+    monkeypatch.setattr(mod, "extract_claims", unavailable)
+    outcome = fetch_and_extract(REQUEST, robots=StubRobots())  # type: ignore[arg-type]
+
+    assert outcome.status == "complete"
+    assert outcome.extractor_error == "extractor_unavailable"
+    assert outcome.extractor_version == mod.FALLBACK_VERSION
+    assert outcome.claims, "the fallback should find the numeric claim here"
+
+
+def test_the_outcome_still_cannot_hold_the_article(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Claims are spans. The document is not a span (D039)."""
+    _install(monkeypatch, _article())
+    monkeypatch.setattr(mod, "extract_claims", lambda text: ([], {"extractor_version": "v1:a"}))
+    outcome = fetch_and_extract(REQUEST, robots=StubRobots())  # type: ignore[arg-type]
+    assert ARTICLE not in outcome.model_dump_json()

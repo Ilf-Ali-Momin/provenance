@@ -16,6 +16,17 @@ extraction happens in memory, the text is discarded. So the job returns the
 hash and the derived facts, the text goes out of scope when the function
 returns, and the requirement holds by construction rather than by a reviewer
 noticing (D032).
+
+Claims are the one exception, and they are the exception DATA.md names: "only
+content hashes, **derived claims**, and aggregate statistics reach storage".
+A claim is a span, not the document. That distinction is enforced by a length
+cap rather than trusted - without one, a single claim of start=0 to
+len(source) is valid and the whole article reaches Redis under the name of a
+derived claim (D039).
+
+Claim extraction runs here rather than in the API, because ARCHITECTURE.md puts
+it first in the pipeline and because it needs the article text, which exists
+only inside this function.
 """
 
 from __future__ import annotations
@@ -24,8 +35,13 @@ import hashlib
 from datetime import UTC, datetime
 from typing import Final
 
+import structlog
 from pydantic import BaseModel, Field
 
+from pipeline.claims.extract import extract_claims
+from pipeline.claims.fallback import VERSION as FALLBACK_VERSION
+from pipeline.claims.fallback import extract_claims_offline
+from pipeline.claims.schema import Claim
 from pipeline.errors import ProvenanceError, UrlRejectedError
 from pipeline.net.config import FetchSettings
 from pipeline.net.fetch import fetch
@@ -34,6 +50,7 @@ from pipeline.text.config import ExtractSettings
 from pipeline.text.extract import extract_article
 
 ID_PREFIX: Final = "an_"
+logger = structlog.get_logger(__name__)
 
 
 class FetchRequest(BaseModel):
@@ -49,9 +66,11 @@ class FetchRequest(BaseModel):
 class FetchOutcome(BaseModel):
     """What the worker returns, and therefore what reaches Redis.
 
-    Every field here is a derived fact or a hash. There is no field capable of
-    holding article text, which is the same enforcement strategy API.md uses to
-    keep a verdict out of the response: make the schema unable to express it.
+    Every field is a derived fact, a hash, or a claim. There is no field
+    capable of holding the article, which is the same enforcement strategy
+    API.md uses to keep a verdict out of the response: make the schema unable
+    to express it. Claims carry spans bounded by `max_claim_chars`, which is
+    what keeps "derived claim" from meaning "the document" (D039).
     """
 
     model_config = {"frozen": True}
@@ -66,6 +85,9 @@ class FetchOutcome(BaseModel):
     declared_language: str | None = None
     had_invisible: bool | None = None
     markers_removed: dict[str, int] = Field(default_factory=dict)
+    claims: list[Claim] = Field(default_factory=list)
+    extractor_version: str | None = None
+    extractor_error: str | None = None
     error_code: str | None = None
     completed_at: str = ""
 
@@ -90,6 +112,7 @@ def fetch_and_extract(
     robots: RobotsWithSitemaps | None = None,
     fetch_settings: FetchSettings | None = None,
     extract_settings: ExtractSettings | None = None,
+    claim_extraction: bool = True,
 ) -> FetchOutcome:
     """Fetch one URL, extract it, and return derived facts only.
 
@@ -129,6 +152,27 @@ def fetch_and_extract(
             completed_at=_now(),
         )
 
+    # Claim extraction, on text that is still in scope. A later component
+    # needing the article fetches it again or runs here; nothing reads it back
+    # out of a queue result, which is the constraint D032 chose and the
+    # architecture had already chosen.
+    claims: list[Claim] = []
+    extractor_version: str | None = None
+    extractor_error: str | None = None
+    if claim_extraction:
+        try:
+            claims, claim_report = extract_claims(article.text)
+            extractor_version = str(claim_report.get("extractor_version") or "")
+        except ProvenanceError as exc:
+            # D004: the pipeline degrades rather than fails. The rule based
+            # extractor is worse and says so in its version string, which is
+            # what makes the degradation visible on the card rather than
+            # looking like an article that happened to contain no claims.
+            extractor_error = exc.code
+            claims = extract_claims_offline(article.text)
+            extractor_version = FALLBACK_VERSION
+            logger.info("extraction_degraded", code=exc.code, claims=len(claims))
+
     # `article.text` is read here and never returned. It leaves scope with this
     # function, which is what makes "extraction happens in memory" true.
     return FetchOutcome(
@@ -142,5 +186,8 @@ def fetch_and_extract(
         declared_language=article.declared_language,
         had_invisible=article.had_invisible,
         markers_removed=article.removed or {},
+        claims=claims,
+        extractor_version=extractor_version,
+        extractor_error=extractor_error,
         completed_at=_now(),
     )
