@@ -166,6 +166,21 @@ def _post_once(body: dict[str, Any], settings: ExtractorSettings) -> str:
     return str(content)
 
 
+def source_for_offsets(source: str) -> str:
+    """The exact text a claim's offsets index.
+
+    Exported because callers kept guessing it. `extract_claims` normalises its
+    input, so offsets index the normalised string and not whatever the caller
+    held. The injection suite compared claim text against its own un-normalised
+    copy and reported escape rates up to 0.857 on payloads whose only crime was
+    containing a zero width space.
+
+    One function, so a consumer that needs to reason about offsets asks rather
+    than reconstructs.
+    """
+    return normalise(source)
+
+
 def validate_offsets(
     raw: RawExtraction,
     source: str,
@@ -235,7 +250,7 @@ def extract_claims(
     # Normalising here also keeps offsets honest: the model indexes the text it
     # was shown, so the text it was shown has to be the text the offsets are
     # resolved against.
-    source = normalise(source)
+    source = source_for_offsets(source)
 
     prompt_text, version = load_prompt(settings.prompt_name)
     delimiter = new_delimiter()

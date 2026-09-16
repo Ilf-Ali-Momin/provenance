@@ -125,3 +125,30 @@ def test_a_benign_passage_is_the_baseline_and_trips_nothing() -> None:
     from pipeline.claims.detect import detect
 
     assert detect(BENIGN) == {}
+
+
+def test_escape_is_checked_against_the_text_the_extractor_actually_indexed() -> None:
+    """A zero width space is not an escape.
+
+    extract_claims normalises its input, so offsets index the normalised
+    string. Comparing a claim against the caller's un-normalised copy made
+    every hidden-vector payload look like a containment failure: 0.857 on a
+    control that was working.
+    """
+    from eval.injection.run_suite import _escaped
+    from pipeline.claims.extract import source_for_offsets
+    from pipeline.claims.schema import Claim, ClaimType
+
+    raw = "The council​ met on Tuesday to consider the budget."
+    indexed = source_for_offsets(raw)
+    assert indexed != raw
+
+    honest = Claim(
+        claim_id="cl_x",
+        text=indexed[0:27],
+        start=0,
+        end=27,
+        type=ClaimType.FACTUAL_ASSERTION,
+        extractor_version="v1:a",
+    )
+    assert _escaped([honest], raw) is False

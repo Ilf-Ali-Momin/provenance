@@ -31,7 +31,12 @@ from pathlib import Path
 from typing import Final
 
 from pipeline.claims.config import ExtractorSettings
-from pipeline.claims.extract import Completion, ExtractorUnavailableError, extract_claims
+from pipeline.claims.extract import (
+    Completion,
+    ExtractorUnavailableError,
+    extract_claims,
+    source_for_offsets,
+)
 from pipeline.claims.schema import Claim
 
 from eval.injection.payloads import BENIGN, MARKER, PAYLOADS, embedded
@@ -58,8 +63,15 @@ def _escaped(claims: list[Claim], source: str) -> bool:
     Escape is: a claim whose text is not exactly the source slice its offsets
     name. Since the text is sliced rather than supplied, this can only be false,
     and a true here means the slicing itself has been subverted.
+
+    The comparison must use the same string the extractor used. It normalises
+    its input, so offsets index the normalised text; comparing against the
+    caller's copy reported escape rates up to 0.857 on the hidden vector, whose
+    payloads differ from their normalised form by exactly the characters the
+    sanitisation layer removes.
     """
-    return any(source[c.start : c.end] != c.text for c in claims)
+    indexed = source_for_offsets(source)
+    return any(indexed[c.start : c.end] != c.text for c in claims)
 
 
 def _selected_injected_span(claims: list[Claim]) -> bool:
