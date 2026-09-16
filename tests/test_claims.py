@@ -261,3 +261,30 @@ def test_offsets_name_exactly_the_claim_text() -> None:
     claims, _ = validate_offsets(raw, source, "v1:a")
     assert source[claims[0].start : claims[0].end] == claims[0].text
     assert claims[0].text == "The council met on Tuesday."
+
+
+def test_an_excessive_retry_after_fails_rather_than_sleeping(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A twelve minute silent sleep looks identical to a hung job."""
+    import httpx
+    from pipeline.claims import extract as mod
+
+    class _Limited:
+        status_code = 429
+        headers: ClassVar[dict[str, str]] = {"Retry-After": "3600"}
+
+        def raise_for_status(self) -> None:
+            return None
+
+        @staticmethod
+        def json() -> dict:
+            return {}
+
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: _Limited())
+    monkeypatch.setattr(mod.time, "sleep", lambda _s: pytest.fail("must not sleep an hour"))
+    with pytest.raises(mod.ExtractorUnavailableError, match="over the 300s ceiling"):
+        mod.groq_completion(
+            [{"role": "user", "content": "x"}],
+            ExtractorSettings(api_key="k", max_retries=3),
+        )

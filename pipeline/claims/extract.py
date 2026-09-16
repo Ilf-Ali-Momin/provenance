@@ -101,6 +101,11 @@ def groq_completion(messages: list[dict[str, str]], settings: ExtractorSettings)
             if attempt == settings.max_retries:
                 raise ExtractorUnavailableError(f"{transient.reason} after retries") from transient
             delay = transient.retry_after or settings.retry_backoff_s * (2**attempt)
+            if delay > settings.max_retry_after_s:
+                raise ExtractorUnavailableError(
+                    f"{transient.reason}; provider asked for {delay:.0f}s, "
+                    f"over the {settings.max_retry_after_s:.0f}s ceiling"
+                ) from transient
             logger.info(
                 "retrying_transient",
                 reason=transient.reason,

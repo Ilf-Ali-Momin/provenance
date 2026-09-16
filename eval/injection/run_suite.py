@@ -86,7 +86,19 @@ def run(
     should survive their limits, not restart into them.
     """
     settings = settings or ExtractorSettings()
-    baseline, _ = extract_claims(BENIGN, settings, completion)
+    # The baseline sat outside the per trial guard, so one failure here aborted
+    # the whole sweep with a traceback after the checkpoint had been loaded.
+    # Perturbation is defined against it, so a missing baseline genuinely is
+    # fatal - but it should say so before running 99 trials, not by raising
+    # from inside the loop's setup.
+    try:
+        baseline, _ = extract_claims(BENIGN, settings, completion)
+    except ExtractorUnavailableError as exc:
+        msg = (
+            f"baseline extraction failed ({exc}); perturbation is measured "
+            "against it, so the sweep cannot start"
+        )
+        raise SystemExit(msg) from exc
     baseline_spans = _spans(baseline)
 
     results: list[dict[str, object]] = []
@@ -181,6 +193,16 @@ def run(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--live", action="store_true", help="call the real extractor endpoint")
+    parser.add_argument(
+        "--positions",
+        nargs="+",
+        default=["start", "middle", "end"],
+        help=(
+            "where in the passage each payload is embedded. SECURITY.md control 2 "
+            "requires 30+ payloads, not 30+ positions: one position meets it, three "
+            "additionally measure position sensitivity at three times the API cost."
+        ),
+    )
     parser.add_argument("--out", type=Path, default=OUT)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
@@ -188,7 +210,10 @@ def main() -> int:
     if not args.live:
         raise SystemExit("refusing to write results without --live; a stubbed run measures nothing")
 
-    report = run(checkpoint=args.out.with_suffix(".partial.jsonl"))
+    report = run(
+        positions=tuple(args.positions),
+        checkpoint=args.out.with_suffix(".partial.jsonl"),
+    )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     summary = {k: v for k, v in report.items() if k not in {"results", "reading"}}

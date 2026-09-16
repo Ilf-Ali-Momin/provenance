@@ -28,7 +28,16 @@ class ExtractorSettings(BaseSettings):
     # At 512 the budget was spent reasoning and the reply was empty, which the
     # provider reports as json_validate_failed with an empty failed_generation
     # - a confusing error for a budget problem.
-    max_tokens: int = Field(default=4096, gt=0)
+    # The provider reserves max_tokens against a per minute token budget
+    # (8000), so this value sets throughput as much as capability: at 4096 the
+    # budget allowed roughly one request a minute and a 99 trial sweep spent
+    # most of its time in backoff.
+    #
+    # Measured, not guessed. 512 fails with an empty generation and 1024 failed
+    # on the suite's own baseline passage, because reasoning tokens are spent
+    # before content even at low effort. 2048 leaves headroom at about 2.9
+    # requests a minute.
+    max_tokens: int = Field(default=2048, gt=0)
     # Lower effort keeps latency and token spend down on what is a short,
     # mechanical task. Sent only when set, since not every model accepts it.
     reasoning_effort: str = "low"
@@ -39,6 +48,12 @@ class ExtractorSettings(BaseSettings):
     # else's API is the same mistake pointed outward.
     max_retries: int = Field(default=4, ge=0)
     retry_backoff_s: float = Field(default=2.0, gt=0)
+    # A ceiling on how long a provider's Retry-After is honoured. Without one,
+    # a header asking for an hour is an hour of sleeping inside what looks like
+    # a running job: this sweep sat for twelve minutes with no output and no
+    # error before it was killed. Past the ceiling the call fails and says so,
+    # which is information rather than a hang.
+    max_retry_after_s: float = Field(default=300.0, gt=0)
     # A floor between calls, so a long evaluation sweep does not walk into the
     # limit in the first place.
     min_interval_s: float = Field(default=0.0, ge=0)
