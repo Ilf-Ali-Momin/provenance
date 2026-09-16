@@ -87,9 +87,10 @@ li { margin-bottom: 3pt; }
 <p class="lede">An evidence-surfacing system for news claims. This is a record of the work done on milestone M0: the leakage critique that motivates the project, the out-of-distribution corpus built to test it, and the defects found along the way — including the ones I introduced.</p>
 <p class="meta">
   <span>2026-09-16</span>
-  <span>39 commits</span>
-  <span>330 tests</span>
-  <span>26 decisions</span>
+  <span>suite v4 · sha 1adb5673</span>
+  <span>45 commits</span>
+  <span>341 tests</span>
+  <span>30 decisions</span>
   <span>branch master</span>
 </p>
 
@@ -109,18 +110,21 @@ li { margin-bottom: 3pt; }
     <tr><th>Condition</th><th class="n">Linear, full</th><th class="n">DistilBERT, reduced</th><th>Information removed</th></tr>
   </thead>
   <tbody>
-    <tr><td>Baseline</td><td class="n">0.9849</td><td class="n">0.9920</td><td>none</td></tr>
-    <tr><td>First sentence removed</td><td class="n">0.9756</td><td class="n">0.9710</td><td>leading sentence</td></tr>
-    <tr><td>Length matched</td><td class="n">0.9824</td><td class="n">0.9700</td><td>document length</td></tr>
-    <tr class="key"><td>Structure only</td><td class="n">0.8184</td><td class="n">0.8350</td><td>every content word</td></tr>
+    <tr><td>Baseline</td><td class="n">0.9849</td><td class="n">0.9920 †</td><td>none</td></tr>
+    <tr><td>First sentence removed</td><td class="n">0.9756</td><td class="n">0.9710 †</td><td>leading sentence</td></tr>
+    <tr><td>Length matched</td><td class="n">0.9824</td><td class="n">0.9700 †</td><td>document length</td></tr>
+    <tr class="key"><td>Structure only</td><td class="n">0.8184</td><td class="n">0.832<br><span class="small dim">0.765–0.872, 3 seeds</span></td><td>every content word</td></tr>
   </tbody>
 </table>
 
 <p><strong>Structure only is the decisive row.</strong> Every content word is replaced with a shape token — <code>Trump</code> becomes <code>Xxxxx</code>, <code>2017</code> becomes <code>0000</code> — leaving punctuation, capitalisation and length. Nothing a human could read survives. Accuracy is still 81.8% and 83.5% against a 50% chance baseline. Formatting residue alone carries roughly two thirds of the distance from chance to the headline figure.</p>
 
-<div class="note">
-<p>That two unrelated model families, at different corpus scales, land 1.7 points apart on that condition matters more than either number. One probe could be an artefact of the probe. Two agreeing this closely indicates the signal belongs to the corpus.</p>
+<div class="warn">
+<p><strong>A claim withdrawn.</strong> An earlier version of this report said the two model families "land 1.7 points apart" on this condition, and that the agreement mattered more than either number. It rested on a single transformer run made before the runner seeded anything — <code>torch.manual_seed</code> was never called. With seeding controlled the transformer spans <strong>0.765 to 0.872</strong> across three seeds, and the linear probe's 0.818 sits inside that range. The agreement was one draw, and the claim is withdrawn rather than softened.</p>
+<p>What survives is weaker and still sufficient: both families land far above chance with every content word destroyed, at 0.818 and a worst-seed 0.765. That supports the signal being a property of the corpus rather than of one probe. It does not support them agreeing closely.</p>
 </div>
+
+<p><strong>The linear column is single seed and deterministic</strong>, measured not assumed: five seeds return 0.9849 and 0.8184 to four decimal places, because the mirror ships a fixed split, the structure-only transform is deterministic, and <code>LogisticRegression</code> under lbfgs ignores <code>random_state</code>. <strong>† marks a single unseeded transformer run</strong> — not reproducible, and with a delta smaller than that column's 10.8-point seed spread, so those two rows establish nothing. They stay in the table without a delta, because deleting them would hide that they were measured.</p>
 
 <p>A document's comma placement does not change when its content becomes false. What the classifier separates is two publishing pipelines — one house style guide, one HTML scrape — by their formatting residue.</p>
 
@@ -163,28 +167,46 @@ li { margin-bottom: 3pt; }
 <p><strong>No accuracy appears in this section, and none is available.</strong> Accuracy requires veracity labels, and the out-of-distribution suite deliberately carries none (D001). Each figure below is the share of a group that the ISOT model assigns to the corpus's wire-service half — the class that corpus treats as real. <strong>No group here is established as more or less truthful than any other.</strong></p>
 </div>
 
-<p>The plan expected accuracy decaying toward chance on later text. That number cannot exist, so what is reported instead is what the model <em>says</em>. Both the baseline model and the structure-only model were applied unchanged to the 384-document frozen suite.</p>
+<p>The plan expected accuracy decaying toward chance on later text. That number cannot exist, so what is reported instead is what the model <em>says</em>. Both models were applied unchanged to <code>ood_suite_2026_v4</code>: 266 documents, 41 publishers, nine months. These supersede figures measured on the first freeze, which was 384 documents with 289 published on a single day; both runs are kept in <code>transfer.json</code>, keyed by corpus hash.</p>
 
 <table>
   <thead>
     <tr><th>Group</th><th class="n">Documents</th><th class="n">Baseline</th><th class="n">Structure only</th></tr>
   </thead>
   <tbody>
-    <tr class="key"><td>Whole suite</td><td class="n">384</td><td class="n">22.1%</td><td class="n">40.9%</td></tr>
-    <tr><td>Wire</td><td class="n">15</td><td class="n">40.0%</td><td class="n">60.0%</td></tr>
-    <tr><td>Regional</td><td class="n">75</td><td class="n">30.7%</td><td class="n">38.7%</td></tr>
-    <tr><td>National</td><td class="n">40</td><td class="n">20.0%</td><td class="n">37.5%</td></tr>
-    <tr><td>Partisan</td><td class="n">254</td><td class="n">18.9%</td><td class="n">40.9%</td></tr>
-    <tr><td>Lean left</td><td class="n">136</td><td class="n">36.8%</td><td class="n">47.8%</td></tr>
-    <tr><td>Lean right</td><td class="n">67</td><td class="n">10.5%</td><td class="n">37.3%</td></tr>
-    <tr><td>Flagged low credibility</td><td class="n">60</td><td class="n">10.0%</td><td class="n">30.0%</td></tr>
+    <tr class="key"><td>Whole suite</td><td class="n">266</td><td class="n">22.2%</td><td class="n">56.4%</td></tr>
+    <tr><td>Wire</td><td class="n">30</td><td class="n">36.7%</td><td class="n">90.0%</td></tr>
+    <tr><td>Regional</td><td class="n">27</td><td class="n">33.3%</td><td class="n">37.0%</td></tr>
+    <tr><td>National</td><td class="n">73</td><td class="n">17.8%</td><td class="n">68.5%</td></tr>
+    <tr><td>Partisan</td><td class="n">136</td><td class="n">19.1%</td><td class="n">46.3%</td></tr>
+    <tr><td>Lean left</td><td class="n">68</td><td class="n">27.9%</td><td class="n">39.7%</td></tr>
+    <tr><td>Lean right</td><td class="n">50</td><td class="n">20.0%</td><td class="n">54.0%</td></tr>
+    <tr><td>Flagged low credibility</td><td class="n">18</td><td class="n">16.7%</td><td class="n">44.4%</td></tr>
   </tbody>
 </table>
 
-<p>A model scoring 0.9849 on its own held-out split calls <strong>78% of real 2026 news false</strong> — including 60% of actual wire copy, the half of its training data it is supposed to recognise. Its output tracks publisher type and political lean: 36.8% for lean-left against 10.5% for lean-right, across articles where no difference in truthfulness has been established or claimed.</p>
+<p>A model scoring 0.9849 on its own held-out split calls <strong>78% of real 2026 news false</strong> — including 63% of actual wire copy, the half of its training data it is supposed to recognise. On the superseded one-day suite that was 77.9%; across nine months and 41 publishers it is 77.8%. <strong>This is the result the report rests on, and it is the one that replicated.</strong></p>
 
-<p>Destroying every content word relaxes that. The blanket rejection eases to 40.9%, wire recognition rises to 60%, and <strong>the lean gap narrows from 26.3 points to 10.5</strong>. Most of the political skew therefore rides on topic vocabulary — what 2026 articles happen to be about — while a smaller stylistic component survives the loss of every readable word. This locates the skew; neither model is doing anything with veracity. Single seed, no intervals, so the residual 10.5 points is not established as non-zero.</p>
+<p>It also survives resampling. Publishers are the sampling unit, not documents — documents from one outlet share a house style and a topic mix, and DATA.md makes the domain the unit everywhere else for that reason. Resampling the 41 publishers with replacement over 2000 draws puts the whole-suite share at <strong>22.2%, 95% interval [14.7%, 30.2%]</strong>, well clear of 50%. Refitting the model changes nothing: five seeds give 0.2218 every time.</p>
 
+<h3>The lean gap did not replicate, and is withdrawn</h3>
+<p>The first freeze showed 36.8% of lean-left documents called real against 10.5% of lean-right — a 26.3 point gap, reported as a finding. It does not survive.</p>
+
+<table>
+  <thead><tr><th>Measure</th><th class="n">First freeze</th><th class="n">v4</th><th class="n">v4, 95% over publishers</th></tr></thead>
+  <tbody>
+    <tr><td>Baseline, lean left</td><td class="n">36.8%</td><td class="n">27.9%</td><td class="n">[13.6, 42.6]</td></tr>
+    <tr><td>Baseline, lean right</td><td class="n">10.5%</td><td class="n">20.0%</td><td class="n">[6.6, 48.3]</td></tr>
+    <tr class="key"><td>Baseline gap</td><td class="n">+26.3 pp</td><td class="n">+7.9 pp</td><td class="n">[&minus;25.5, +27.8]</td></tr>
+    <tr class="key"><td>Structure-only gap</td><td class="n">+10.5 pp</td><td class="n">&minus;14.3 pp</td><td class="n">[&minus;36.9, +8.0]</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Both gaps straddle zero.</strong> Neither is established as non-zero once the publisher is the sampling unit. The intervals are wide because <code>lean_right</code> holds six outlets, and that width is the honest width — a narrower one would come from treating 50 documents from 6 publishers as 50 independent draws.</p>
+
+<p><strong>The obvious explanation was tested and does not hold either.</strong> If the September 11 concentration produced the original gap, September inside v4 should still show it. It does not: <strong>+4.5 pp in September against +3.6 pp for January&ndash;August</strong>, a difference this corpus cannot resolve. Two suites differed in dates <em>and</em> in publisher mix at once; this rules out the first, not the second, and the cause is left unexplained rather than fitted to the nearest plausible story.</p>
+
+<p>Two further things bear on reading the pooled number. The pooled gap is <em>larger</em> than either period's — Simpson's paradox, since every rate is higher in September while lean-left is 54% September against lean-right's 36%. And September's elevated rates are confounded with collection path: September is the live-window month, the other eight came from archive backfill, and this suite cannot separate them.</p>
 <div class="warn">
 <p><strong>The flagged row is not the model working.</strong> Low credibility is Media Bias/Fact Check's label, not a truth verdict, and in this corpus it sits entirely on right-of-centre publishers (D017), so it cannot be separated from the lean effect above it. The model has never seen a truth label for any of these articles.</p>
 </div>
@@ -202,7 +224,7 @@ li { margin-bottom: 3pt; }
 <h3>What the rebuild produced</h3>
 <table>
   <thead>
-    <tr><th>Measure</th><th class="n">First freeze</th><th class="n">Frozen v3</th><th>Plan</th></tr>
+    <tr><th>Measure</th><th class="n">First freeze</th><th class="n">Frozen v4</th><th>Plan</th></tr>
   </thead>
   <tbody>
     <tr><td>Months represented</td><td class="n">1</td><td class="n">9</td><td>spread across weeks, not one cycle</td></tr>
@@ -210,7 +232,8 @@ li { margin-bottom: 3pt; }
     <tr><td>Mentioning 9/11</td><td class="n">27%</td><td class="n">0.8%</td><td>—</td></tr>
     <tr><td>Publishers</td><td class="n">31</td><td class="n">41</td><td>—</td></tr>
     <tr><td>Wire documents</td><td class="n">15</td><td class="n">30</td><td>thinnest stratum, still thin</td></tr>
-    <tr><td>Documents with identity residue</td><td class="n">1</td><td class="n">2</td><td>from 42 before the rule fixes</td></tr>
+    <tr><td>Documents with identity residue</td><td class="n">1</td><td class="n">0</td><td>from 42 before the rule fixes (D026)</td></tr>
+          <tr><td>Non-articles excluded by rule</td><td class="n">&mdash;</td><td class="n">2</td><td>newsletter issue, donation page (D027)</td></tr>
     <tr class="key"><td>Documents</td><td class="n">384</td><td class="n">266</td><td>400–600, floor 300</td></tr>
   </tbody>
 </table>
@@ -265,8 +288,9 @@ li { margin-bottom: 3pt; }
     <tr><td>No article text in logs, errors or git</td><td>closed, tested</td></tr>
     <tr><td>No verdict about any person or claim</td><td>closed, structural</td></tr>
     <tr><td>Publisher markers stripped before storage, one pipeline for every stratum</td><td>closed</td></tr>
-    <tr class="key"><td>Encrypted storage in an EU region — the corpora sit on one developer machine; host disk encryption is not this control</td><td>open, stated</td></tr>
-    <tr class="key"><td>A route for a data subject to object — none is published; a response would be manual</td><td>open, stated</td></tr>
+    <tr><td>Encrypted storage in an EU region — FileVault verified by <code>fdesetup status</code>, 2026-09-16; host in the EU</td><td>closed, evidenced</td></tr>
+    <tr><td>Written objection procedure — receipt, proportionate verification, action, logging (<code>docs/objection-procedure.md</code>)</td><td>closed</td></tr>
+    <tr class="key"><td>A <em>reachable</em> contact — the user agent publishes <code>https://example.invalid/bot</code>, which cannot resolve, so no publisher contacted during collection had a route either</td><td>open, stated</td></tr>
   </tbody>
 </table>
 
@@ -290,14 +314,14 @@ stripped    nothing matched the publisher marker rules</pre>
 <table>
   <thead><tr><th>Check</th><th>Result</th></tr></thead>
   <tbody>
-    <tr><td>pytest</td><td class="mono">330 passed, 2 deselected</td></tr>
-    <tr><td>ruff check</td><td class="mono">All checks passed</td></tr>
-    <tr><td>ruff format --check</td><td class="mono">clean</td></tr>
-    <tr><td>mypy strict (pipeline, eval)</td><td class="mono">no issues in 34 source files</td></tr>
-    <tr><td>pre-commit (ruff, ruff-format, gitleaks)</td><td class="mono">passing on every commit</td></tr>
+    <tr><td>pytest</td><td class="mono">341 passed, 2 deselected &middot; exit 0</td></tr>
+    <tr><td>ruff check</td><td class="mono">All checks passed &middot; exit 0</td></tr>
+    <tr><td>ruff format --check</td><td class="mono">75 files already formatted &middot; exit 0</td></tr>
+    <tr><td>mypy strict (pipeline, eval)</td><td class="mono">no issues in 36 source files &middot; exit 0</td></tr>
+    <tr><td>pre-commit --all-files</td><td class="mono">ruff, ruff-format, gitleaks all Passed &middot; exit 0</td></tr>
   </tbody>
 </table>
-<p class="small dim">Exit codes are read directly rather than through a pipe, for the reason given in section 5. 4,907 lines of source against 3,451 lines of tests. <code>mypy tests/</code> reports 66 errors — mostly dict invariance in test helpers — and tests are not yet in mypy's <code>files</code>; that is recorded in D025 rather than fixed silently.</p>
+<p class="small dim">Every exit code above was read directly rather than through a pipe, for the reason given in section 6. 5,445 lines of source against 3,564 lines of tests. <code>mypy tests/</code> reports 66 errors — mostly dict invariance in test helpers — and tests are not yet in mypy's <code>files</code>; recorded in D025 rather than fixed silently.</p>
 
 <h2>10. Decisions</h2>
 <p class="small">Each entry in <code>context/DECISIONS.md</code> carries the alternatives it rejected, the reason each lost, the costs being accepted rather than solved, and the condition that would reverse it.</p>
@@ -330,24 +354,48 @@ stripped    nothing matched the publisher marker rules</pre>
     <tr><td class="mono">D024</td><td>The per month cap covers the publisher's whole sample, not the archive alone</td></tr>
     <tr><td class="mono">D025</td><td>Collectors depend on a robots interface, not on the robots cache</td></tr>
     <tr><td class="mono">D026</td><td>Publisher stripping is widened by audit, and the audit is corrected with it</td></tr>
+    <tr><td class="mono">D027</td><td>A document that is not an article is excluded by rule, before selection</td></tr>
+    <tr><td class="mono">D028</td><td>The corpus stays at 266 and the publisher pool is not widened</td></tr>
+    <tr><td class="mono">D029</td><td>The topic requirement is measured rather than dropped, and it holds</td></tr>
+    <tr><td class="mono">D030</td><td>The storage control is closed on evidence; the objection route is written but unreachable</td></tr>
   </tbody>
 </table>
 
-<h2 class="break">11. What is not done</h2>
+<h2 class="break">11. The topic requirement, finally checked</h2>
+<p>DATA.md asks for topics spread across politics, health, science and business so that no single news cycle dominates. The freeze reads topic from the article URL path, which resolves for 17 of 266 documents, so the requirement went unverified for the whole of M0. Measured by zero-shot entailment over the text with the MNLI model ARCHITECTURE.md already names for M3, pinned at revision <code>6f5cf0a2</code>.</p>
+
+<table>
+  <thead><tr><th>Topic</th><th class="n">Documents</th><th class="n">Share of named</th></tr></thead>
+  <tbody>
+    <tr><td>politics</td><td class="n">80</td><td class="n">37.0%</td></tr>
+    <tr><td>business</td><td class="n">75</td><td class="n">34.7%</td></tr>
+    <tr><td>science</td><td class="n">33</td><td class="n">15.3%</td></tr>
+    <tr><td>health</td><td class="n">28</td><td class="n">13.0%</td></tr>
+    <tr><td>unclear</td><td class="n">50</td><td class="n">18.8% of all</td></tr>
+  </tbody>
+</table>
+
+<p><strong>It holds at the corpus level, and that was not the expected result.</strong> All four topics are present and the largest is 37.0% of named documents against the 25% an even split would give. A corpus of 2026 news from a partisan-heavy pool was expected to be dominated by politics and is not. Coverage rises from 6.4% to 81.2%.</p>
+
+<p><strong>It does not hold per cell, and the cells are reported rather than fixed.</strong> Wire is 73% business, which is what a wire service&rsquo;s dated archive contains; partisan is 48% politics. The suite is frozen, and rebalancing after seeing the distribution would be selection made with the data visible.</p>
+
+<p><strong>Neither method is a ground truth.</strong> Where a path label and an inferred label both exist they agree on 12 of 17 documents. That is 17 documents, so the rate is itself uncertain; the honest reading is that both signals are noisy. The inferred label is a separate field and never replaces the publisher&rsquo;s own filing decision.</p>
+
+<h2 class="break">12. What is not done</h2>
 
 <h3>Requires a decision that is not mine to make</h3>
 <ul>
   <li><strong>The corpus is 266 documents against a 400–600 target and a 300 floor.</strong> This is the count consequence of the refusal asymmetry in section 3, not a separate problem. Because the partisan stratum is balanced by lean, the thinner side sets the quota, so collecting more of everything else adds nothing. Getting past 300 means accepting an unbalanced partisan stratum, widening the pool with outlets chosen for being collectable, or accepting a corpus below the floor. The second is rejected in D028 for the reason section 3 gives; the first and third are live and are recorded rather than absorbed.</li>
   <li><strong>Publisher identity remains recoverable at 38.3% against 8.2% chance.</strong> Marker stripping has reached its limit. Whether that matters depends on what is built on this corpus next.</li>
-  <li><strong>Two documents in the frozen suite are not articles</strong> — a newsletter issue and a donation page. They are detected and named, not removed.</li>
+  <li><strong>The cause of the original 26.3 point lean gap is not established.</strong> It did not replicate, and the news-cycle explanation was tested and rejected. Dates and publisher mix changed between the suites at once; only the first was ruled out.</li>
 </ul>
 
 <h3>Known and outstanding</h3>
 <ul>
-  <li>Ablation 4 was measured on the superseded 384-document freeze. It has not been re-run against frozen v3.</li>
+  <li>The transformer’s baseline, first-sentence and length-matched runs are single unseeded draws and are not reproducible. Only structure-only was re-run under seed control.</li>
   <li>The aggregator stratum is empty. Five aggregators were candidates; all five either refuse this collector or publish nothing it can read (D023).</li>
   <li>The wire stratum reaches only two of the three splits, and is 30 documents from 2 publishers.</li>
-  <li>Topic is unknown for 93.6% of the suite, because topic is read from the publisher's own URL path rather than inferred from the text.</li>
+  <li>Topic per cell is uneven and reported rather than rebalanced: wire is 73% business, partisan 48% politics (D029).</li>
   <li><code>tests/</code> is not covered by mypy; that run reports 66 errors, unrelated to the robots work that exposed it.</li>
   <li>M1 is partially done — fetcher, robots, extraction, demo CLI, Postgres and Redis all exist; the Flask skeleton does not.</li>
 </ul>
@@ -357,7 +405,7 @@ stripped    nothing matched the publisher marker rules</pre>
 </div>
 
 <p class="small dim" style="margin-top:14pt; padding-top:8pt; border-top:0.5pt solid var(--line)">
-Frozen suite <span class="mono">ood_suite_2026_spread</span>, 266 records, sha256 <span class="mono">f7b361e57ec0553d75eb6dc50ebda7fd192b5f0cbd2b5a0c01a78274a8c9efbc</span>, frozen 2026-09-16. Corpus text is not redistributable and is not checked in. Head <span class="mono">2eb9f60</span>.
+Frozen suite <span class="mono">ood_suite_2026_v4</span>, 266 records, 41 publishers, sha256 <span class="mono">1adb5673758262806c14d5edec3c8b02dd6a338276132734bb0f5d0dd3322415</span>, frozen 2026-09-16. Supersedes <span class="mono">ood_suite_2026_spread</span> (v3, sha <span class="mono">f7b361e5</span>) and the 2026-09-11 freeze of 384 records from a single day. Decisions D001&ndash;D030. Corpus text is not redistributable and is not checked in. Regenerate this document from <code>docs/m0-report.html</code>.
 </p>
 
 </body>
