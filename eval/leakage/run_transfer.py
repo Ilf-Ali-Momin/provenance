@@ -43,7 +43,7 @@ from eval.leakage.ablations import Condition, apply_condition, load_corpus
 
 logger = logging.getLogger(__name__)
 
-FROZEN: Final = Path("data/ood/frozen")
+FROZEN: Final = Path("data/ood/frozen-v4")
 OUT: Final = Path("eval/leakage/results/transfer.json")
 WIRE_HALF: Final = 1  # ablations.Split: y is 1 for the wire service half
 
@@ -60,6 +60,27 @@ def load_frozen(path: Path = FROZEN) -> list[dict[str, object]]:
                 if line.strip()
             ]
     return rows
+
+
+def corpus_identity(path: Path = FROZEN) -> dict[str, object]:
+    """The frozen suite's id and hash, read from the freeze's own manifest entry.
+
+    Results are keyed by this hash. A prediction distribution is a statement
+    about one corpus, and the same code over a different freeze is a different
+    result; keying by the hash makes replacing the corpus without re-running
+    visible instead of silent.
+    """
+    entry_file = path / "manifest_entry.json"
+    if not entry_file.exists():
+        return {"id": None, "sha256": None, "path": str(path)}
+    entry = json.loads(entry_file.read_text(encoding="utf-8"))
+    return {
+        "id": entry.get("id"),
+        "sha256": entry.get("sha256"),
+        "record_count": entry.get("record_count"),
+        "frozen_at": entry.get("frozen_at"),
+        "path": str(path),
+    }
 
 
 def wire_share(predictions: np.ndarray) -> float:
@@ -121,8 +142,41 @@ def fit_isot(
     return vectoriser, model, in_domain
 
 
-def transfer(condition: Condition, train_subsample: int | None, seed: int = 0) -> dict[str, object]:
-    rows = load_frozen()
+def lean_gap(
+    rows: list[dict[str, object]], predictions: np.ndarray, mask: np.ndarray
+) -> dict[str, object]:
+    """Lean-left minus lean-right share, within a subset of the corpus.
+
+    D024 anticipated this: the cap on documents per month exists because one
+    news cycle is one distribution, and the way to find out whether that matters
+    is to report the same rates by month. Composition is held fixed here -- the
+    same publishers appear in every month of one frozen suite -- so a gap that
+    differs between periods is a property of the period, not of the sample.
+    """
+    shares: dict[str, float | None] = {}
+    counts: dict[str, int] = {}
+    for bucket in ("lean_left", "lean_right"):
+        sel = np.array([r.get("lean") == bucket for r in rows]) & mask
+        counts[bucket] = int(sel.sum())
+        shares[bucket] = round(wire_share(predictions[sel]), 4) if sel.sum() else None
+
+    left, right = shares["lean_left"], shares["lean_right"]
+    return {
+        "lean_left": {"documents": counts["lean_left"], "predicted_wire_half": left},
+        "lean_right": {"documents": counts["lean_right"], "predicted_wire_half": right},
+        "gap_percentage_points": (
+            round((left - right) * 100, 1) if left is not None and right is not None else None
+        ),
+    }
+
+
+def transfer(
+    condition: Condition,
+    train_subsample: int | None,
+    seed: int = 0,
+    corpus: Path = FROZEN,
+) -> dict[str, object]:
+    rows = load_frozen(corpus)
     if not rows:
         return {"skipped": "no frozen corpus found", "condition": condition}
 
@@ -136,6 +190,7 @@ def transfer(condition: Condition, train_subsample: int | None, seed: int = 0) -
 
     return {
         "condition": condition,
+        "corpus": corpus_identity(corpus),
         "isot_held_out_accuracy": round(in_domain, 4),
         "train_subsample": train_subsample,
         "ood_documents": len(rows),
@@ -144,6 +199,30 @@ def transfer(condition: Condition, train_subsample: int | None, seed: int = 0) -
         "by_lean": rates_by(rows, predictions, "lean"),
         "by_low_quality_flag": rates_by(rows, predictions, "low_quality"),
         "by_publisher": rates_by(rows, predictions, "domain"),
+        "by_month": rates_by(
+            [{**r, "month": str(r.get("published") or "")[:7] or "unknown"} for r in rows],
+            predictions,
+            "month",
+        ),
+        # The hypothesis test, not a decoration. The superseded suite was 75%
+        # one day; if the lean gap it showed was a property of that news cycle,
+        # September inside this suite should still show it and the other eight
+        # months should not.
+        "lean_gap_by_period": {
+            "september": lean_gap(
+                rows,
+                predictions,
+                np.array([str(r.get("published") or "")[:7] == "2026-09" for r in rows]),
+            ),
+            "january_to_august": lean_gap(
+                rows,
+                predictions,
+                np.array(
+                    ["2026-01" <= str(r.get("published") or "")[:7] <= "2026-08" for r in rows]
+                ),
+            ),
+            "whole_suite": lean_gap(rows, predictions, np.ones(len(rows), dtype=bool)),
+        },
         "reading": (
             "Share of each group the ISOT model assigns to the corpus's wire service half, "
             "which that corpus treats as real. No accuracy is reported and none is available: "
@@ -159,13 +238,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Cross domain transfer, ablation 4.")
     parser.add_argument("--condition", default="baseline")
     parser.add_argument("--train-subsample", type=int, default=None)
+    parser.add_argument("--corpus", type=Path, default=FROZEN)
     parser.add_argument("--out", type=Path, default=OUT)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 
-    report = transfer(args.condition, args.train_subsample)
+    report = transfer(args.condition, args.train_subsample, corpus=args.corpus)
     existing = json.loads(args.out.read_text()) if args.out.exists() else {}
-    existing[str(args.condition)] = report
+    identity = corpus_identity(args.corpus)
+    key = str(identity["sha256"] or args.corpus)
+    bucket = existing.setdefault(key, {"corpus": identity, "conditions": {}})
+    bucket["conditions"][str(args.condition)] = report
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(existing, indent=2) + "\n", encoding="utf-8")
     logger.info("wrote %s", args.out)

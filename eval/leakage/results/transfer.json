@@ -1,370 +1,1002 @@
 {
-  "baseline": {
-    "condition": "baseline",
-    "isot_held_out_accuracy": 0.9849,
-    "train_subsample": null,
-    "ood_documents": 384,
-    "ood_predicted_wire_half_overall": 0.2214,
-    "by_stratum": {
-      "national": {
-        "documents": 40,
-        "predicted_wire_half": 0.2
-      },
-      "partisan": {
-        "documents": 254,
-        "predicted_wire_half": 0.189
-      },
-      "regional": {
-        "documents": 75,
-        "predicted_wire_half": 0.3067
-      },
-      "wire": {
-        "documents": 15,
-        "predicted_wire_half": 0.4
-      }
+  "9c59a053dfdd2214c2fe8d7749adb19aa6f4127510aaafbbb0d99676175c4a24": {
+    "corpus": {
+      "id": "ood_suite_2026",
+      "sha256": "9c59a053dfdd2214c2fe8d7749adb19aa6f4127510aaafbbb0d99676175c4a24",
+      "record_count": 384,
+      "frozen_at": "2026-09-11T20:52:09.010531+00:00",
+      "path": "data/ood/frozen",
+      "superseded_by": "ood_suite_2026_v4",
+      "note": "One day of news: 289 of 384 published 2026-09-11, 27% mention the September 11 anniversary."
     },
-    "by_lean": {
-      "center": {
-        "documents": 70,
-        "predicted_wire_half": 0.2
+    "conditions": {
+      "baseline": {
+        "condition": "baseline",
+        "isot_held_out_accuracy": 0.9849,
+        "train_subsample": null,
+        "ood_documents": 384,
+        "ood_predicted_wire_half_overall": 0.2214,
+        "by_stratum": {
+          "national": {
+            "documents": 40,
+            "predicted_wire_half": 0.2
+          },
+          "partisan": {
+            "documents": 254,
+            "predicted_wire_half": 0.189
+          },
+          "regional": {
+            "documents": 75,
+            "predicted_wire_half": 0.3067
+          },
+          "wire": {
+            "documents": 15,
+            "predicted_wire_half": 0.4
+          }
+        },
+        "by_lean": {
+          "center": {
+            "documents": 70,
+            "predicted_wire_half": 0.2
+          },
+          "lean_left": {
+            "documents": 136,
+            "predicted_wire_half": 0.3676
+          },
+          "lean_right": {
+            "documents": 67,
+            "predicted_wire_half": 0.1045
+          },
+          "left": {
+            "documents": 51,
+            "predicted_wire_half": 0.1569
+          },
+          "right": {
+            "documents": 60,
+            "predicted_wire_half": 0.1
+          }
+        },
+        "by_low_quality_flag": {
+          "False": {
+            "documents": 324,
+            "predicted_wire_half": 0.2438
+          },
+          "True": {
+            "documents": 60,
+            "predicted_wire_half": 0.1
+          }
+        },
+        "by_publisher": {
+          "bbc.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.4
+          },
+          "bostonglobe.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.4
+          },
+          "breitbart.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.0667
+          },
+          "cbsnews.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.2
+          },
+          "cnbc.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.9091
+          },
+          "csmonitor.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.1333
+          },
+          "dailykos.com": {
+            "documents": 8,
+            "predicted_wire_half": 0.125
+          },
+          "dailymail.co.uk": {
+            "documents": 15,
+            "predicted_wire_half": 0.1333
+          },
+          "foxnews.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.0
+          },
+          "jacobin.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.1818
+          },
+          "liverpoolecho.co.uk": {
+            "documents": 15,
+            "predicted_wire_half": 0.0
+          },
+          "manchestereveningnews.co.uk": {
+            "documents": 15,
+            "predicted_wire_half": 0.1333
+          },
+          "motherjones.com": {
+            "documents": 10,
+            "predicted_wire_half": 0.2
+          },
+          "nationalpost.com": {
+            "documents": 10,
+            "predicted_wire_half": 0.2
+          },
+          "nbcnews.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.5455
+          },
+          "newscientist.com": {
+            "documents": 10,
+            "predicted_wire_half": 0.0
+          },
+          "nypost.com": {
+            "documents": 13,
+            "predicted_wire_half": 0.0
+          },
+          "reason.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.0
+          },
+          "seattletimes.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.5333
+          },
+          "sfchronicle.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.4667
+          },
+          "statnews.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.1818
+          },
+          "telegraph.co.uk": {
+            "documents": 11,
+            "predicted_wire_half": 0.0
+          },
+          "theatlantic.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.0
+          },
+          "thedailybeast.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.4545
+          },
+          "thedispatch.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.0
+          },
+          "thegatewaypundit.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.2
+          },
+          "theguardian.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.6364
+          },
+          "theintercept.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.0
+          },
+          "upi.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.4
+          },
+          "vox.com": {
+            "documents": 10,
+            "predicted_wire_half": 0.0
+          },
+          "washingtonexaminer.com": {
+            "documents": 8,
+            "predicted_wire_half": 0.25
+          }
+        },
+        "reading": "Share of each group the ISOT model assigns to the corpus's wire service half, which that corpus treats as real. No accuracy is reported and none is available: the OOD suite carries no veracity labels (D001). No group here is established as more or less truthful than another, and the low_quality flag is confounded with political lean (D017), so a high fake share for flagged outlets is not evidence that the model works."
       },
-      "lean_left": {
-        "documents": 136,
-        "predicted_wire_half": 0.3676
-      },
-      "lean_right": {
-        "documents": 67,
-        "predicted_wire_half": 0.1045
-      },
-      "left": {
-        "documents": 51,
-        "predicted_wire_half": 0.1569
-      },
-      "right": {
-        "documents": 60,
-        "predicted_wire_half": 0.1
+      "structure_only": {
+        "condition": "structure_only",
+        "isot_held_out_accuracy": 0.8184,
+        "train_subsample": null,
+        "ood_documents": 384,
+        "ood_predicted_wire_half_overall": 0.4089,
+        "by_stratum": {
+          "national": {
+            "documents": 40,
+            "predicted_wire_half": 0.375
+          },
+          "partisan": {
+            "documents": 254,
+            "predicted_wire_half": 0.4094
+          },
+          "regional": {
+            "documents": 75,
+            "predicted_wire_half": 0.3867
+          },
+          "wire": {
+            "documents": 15,
+            "predicted_wire_half": 0.6
+          }
+        },
+        "by_lean": {
+          "center": {
+            "documents": 70,
+            "predicted_wire_half": 0.3857
+          },
+          "lean_left": {
+            "documents": 136,
+            "predicted_wire_half": 0.4779
+          },
+          "lean_right": {
+            "documents": 67,
+            "predicted_wire_half": 0.3731
+          },
+          "left": {
+            "documents": 51,
+            "predicted_wire_half": 0.4314
+          },
+          "right": {
+            "documents": 60,
+            "predicted_wire_half": 0.3
+          }
+        },
+        "by_low_quality_flag": {
+          "False": {
+            "documents": 324,
+            "predicted_wire_half": 0.429
+          },
+          "True": {
+            "documents": 60,
+            "predicted_wire_half": 0.3
+          }
+        },
+        "by_publisher": {
+          "bbc.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.3333
+          },
+          "bostonglobe.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.4
+          },
+          "breitbart.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.2
+          },
+          "cbsnews.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.1333
+          },
+          "cnbc.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.6364
+          },
+          "csmonitor.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.4667
+          },
+          "dailykos.com": {
+            "documents": 8,
+            "predicted_wire_half": 0.125
+          },
+          "dailymail.co.uk": {
+            "documents": 15,
+            "predicted_wire_half": 0.2
+          },
+          "foxnews.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.2667
+          },
+          "jacobin.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.7273
+          },
+          "liverpoolecho.co.uk": {
+            "documents": 15,
+            "predicted_wire_half": 0.2
+          },
+          "manchestereveningnews.co.uk": {
+            "documents": 15,
+            "predicted_wire_half": 0.1333
+          },
+          "motherjones.com": {
+            "documents": 10,
+            "predicted_wire_half": 0.8
+          },
+          "nationalpost.com": {
+            "documents": 10,
+            "predicted_wire_half": 0.5
+          },
+          "nbcnews.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.4545
+          },
+          "newscientist.com": {
+            "documents": 10,
+            "predicted_wire_half": 0.3
+          },
+          "nypost.com": {
+            "documents": 13,
+            "predicted_wire_half": 0.3846
+          },
+          "reason.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.4667
+          },
+          "seattletimes.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.7333
+          },
+          "sfchronicle.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.4667
+          },
+          "statnews.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.7273
+          },
+          "telegraph.co.uk": {
+            "documents": 11,
+            "predicted_wire_half": 0.2727
+          },
+          "theatlantic.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.1818
+          },
+          "thedailybeast.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.2727
+          },
+          "thedispatch.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.1667
+          },
+          "thegatewaypundit.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.5333
+          },
+          "theguardian.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.5455
+          },
+          "theintercept.com": {
+            "documents": 11,
+            "predicted_wire_half": 0.8182
+          },
+          "upi.com": {
+            "documents": 15,
+            "predicted_wire_half": 0.6
+          },
+          "vox.com": {
+            "documents": 10,
+            "predicted_wire_half": 0.1
+          },
+          "washingtonexaminer.com": {
+            "documents": 8,
+            "predicted_wire_half": 0.625
+          }
+        },
+        "reading": "Share of each group the ISOT model assigns to the corpus's wire service half, which that corpus treats as real. No accuracy is reported and none is available: the OOD suite carries no veracity labels (D001). No group here is established as more or less truthful than another, and the low_quality flag is confounded with political lean (D017), so a high fake share for flagged outlets is not evidence that the model works."
       }
-    },
-    "by_low_quality_flag": {
-      "False": {
-        "documents": 324,
-        "predicted_wire_half": 0.2438
-      },
-      "True": {
-        "documents": 60,
-        "predicted_wire_half": 0.1
-      }
-    },
-    "by_publisher": {
-      "bbc.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.4
-      },
-      "bostonglobe.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.4
-      },
-      "breitbart.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.0667
-      },
-      "cbsnews.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.2
-      },
-      "cnbc.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.9091
-      },
-      "csmonitor.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.1333
-      },
-      "dailykos.com": {
-        "documents": 8,
-        "predicted_wire_half": 0.125
-      },
-      "dailymail.co.uk": {
-        "documents": 15,
-        "predicted_wire_half": 0.1333
-      },
-      "foxnews.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.0
-      },
-      "jacobin.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.1818
-      },
-      "liverpoolecho.co.uk": {
-        "documents": 15,
-        "predicted_wire_half": 0.0
-      },
-      "manchestereveningnews.co.uk": {
-        "documents": 15,
-        "predicted_wire_half": 0.1333
-      },
-      "motherjones.com": {
-        "documents": 10,
-        "predicted_wire_half": 0.2
-      },
-      "nationalpost.com": {
-        "documents": 10,
-        "predicted_wire_half": 0.2
-      },
-      "nbcnews.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.5455
-      },
-      "newscientist.com": {
-        "documents": 10,
-        "predicted_wire_half": 0.0
-      },
-      "nypost.com": {
-        "documents": 13,
-        "predicted_wire_half": 0.0
-      },
-      "reason.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.0
-      },
-      "seattletimes.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.5333
-      },
-      "sfchronicle.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.4667
-      },
-      "statnews.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.1818
-      },
-      "telegraph.co.uk": {
-        "documents": 11,
-        "predicted_wire_half": 0.0
-      },
-      "theatlantic.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.0
-      },
-      "thedailybeast.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.4545
-      },
-      "thedispatch.com": {
-        "documents": 6,
-        "predicted_wire_half": 0.0
-      },
-      "thegatewaypundit.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.2
-      },
-      "theguardian.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.6364
-      },
-      "theintercept.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.0
-      },
-      "upi.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.4
-      },
-      "vox.com": {
-        "documents": 10,
-        "predicted_wire_half": 0.0
-      },
-      "washingtonexaminer.com": {
-        "documents": 8,
-        "predicted_wire_half": 0.25
-      }
-    },
-    "reading": "Share of each group the ISOT model assigns to the corpus's wire service half, which that corpus treats as real. No accuracy is reported and none is available: the OOD suite carries no veracity labels (D001). No group here is established as more or less truthful than another, and the low_quality flag is confounded with political lean (D017), so a high fake share for flagged outlets is not evidence that the model works."
+    }
   },
-  "structure_only": {
-    "condition": "structure_only",
-    "isot_held_out_accuracy": 0.8184,
-    "train_subsample": null,
-    "ood_documents": 384,
-    "ood_predicted_wire_half_overall": 0.4089,
-    "by_stratum": {
-      "national": {
-        "documents": 40,
-        "predicted_wire_half": 0.375
-      },
-      "partisan": {
-        "documents": 254,
-        "predicted_wire_half": 0.4094
-      },
-      "regional": {
-        "documents": 75,
-        "predicted_wire_half": 0.3867
-      },
-      "wire": {
-        "documents": 15,
-        "predicted_wire_half": 0.6
-      }
+  "1adb5673758262806c14d5edec3c8b02dd6a338276132734bb0f5d0dd3322415": {
+    "corpus": {
+      "id": "ood_suite_2026",
+      "sha256": "1adb5673758262806c14d5edec3c8b02dd6a338276132734bb0f5d0dd3322415",
+      "record_count": 266,
+      "frozen_at": "2026-09-16T14:36:20.641501+00:00",
+      "path": "data/ood/frozen-v4"
     },
-    "by_lean": {
-      "center": {
-        "documents": 70,
-        "predicted_wire_half": 0.3857
+    "conditions": {
+      "baseline": {
+        "condition": "baseline",
+        "corpus": {
+          "id": "ood_suite_2026",
+          "sha256": "1adb5673758262806c14d5edec3c8b02dd6a338276132734bb0f5d0dd3322415",
+          "record_count": 266,
+          "frozen_at": "2026-09-16T14:36:20.641501+00:00",
+          "path": "data/ood/frozen-v4"
+        },
+        "isot_held_out_accuracy": 0.9849,
+        "train_subsample": null,
+        "ood_documents": 266,
+        "ood_predicted_wire_half_overall": 0.2218,
+        "by_stratum": {
+          "national": {
+            "documents": 73,
+            "predicted_wire_half": 0.1781
+          },
+          "partisan": {
+            "documents": 136,
+            "predicted_wire_half": 0.1912
+          },
+          "regional": {
+            "documents": 27,
+            "predicted_wire_half": 0.3333
+          },
+          "wire": {
+            "documents": 30,
+            "predicted_wire_half": 0.3667
+          }
+        },
+        "by_lean": {
+          "center": {
+            "documents": 106,
+            "predicted_wire_half": 0.2358
+          },
+          "lean_left": {
+            "documents": 68,
+            "predicted_wire_half": 0.2794
+          },
+          "lean_right": {
+            "documents": 50,
+            "predicted_wire_half": 0.2
+          },
+          "left": {
+            "documents": 24,
+            "predicted_wire_half": 0.0833
+          },
+          "right": {
+            "documents": 18,
+            "predicted_wire_half": 0.1667
+          }
+        },
+        "by_low_quality_flag": {
+          "False": {
+            "documents": 248,
+            "predicted_wire_half": 0.2258
+          },
+          "True": {
+            "documents": 18,
+            "predicted_wire_half": 0.1667
+          }
+        },
+        "by_publisher": {
+          "aljazeera.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "bbc.com": {
+            "documents": 22,
+            "predicted_wire_half": 0.1364
+          },
+          "bloomberg.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "bostonglobe.com": {
+            "documents": 9,
+            "predicted_wire_half": 0.4444
+          },
+          "breitbart.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.1667
+          },
+          "cbsnews.com": {
+            "documents": 8,
+            "predicted_wire_half": 0.375
+          },
+          "cnbc.com": {
+            "documents": 3,
+            "predicted_wire_half": 1.0
+          },
+          "csmonitor.com": {
+            "documents": 7,
+            "predicted_wire_half": 0.0
+          },
+          "dailykos.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.3333
+          },
+          "dailymail.co.uk": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "denverpost.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.3333
+          },
+          "forbes.com": {
+            "documents": 17,
+            "predicted_wire_half": 0.4118
+          },
+          "foxnews.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.3333
+          },
+          "jacobin.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "liverpoolecho.co.uk": {
+            "documents": 3,
+            "predicted_wire_half": 0.3333
+          },
+          "manchestereveningnews.co.uk": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "motherjones.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.0
+          },
+          "nationalpost.com": {
+            "documents": 7,
+            "predicted_wire_half": 0.4286
+          },
+          "nature.com": {
+            "documents": 18,
+            "predicted_wire_half": 0.0
+          },
+          "nbcnews.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.3333
+          },
+          "newscientist.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.0
+          },
+          "nypost.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.3333
+          },
+          "pbs.org": {
+            "documents": 5,
+            "predicted_wire_half": 0.0
+          },
+          "reason.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "reuters.com": {
+            "documents": 27,
+            "predicted_wire_half": 0.2963
+          },
+          "seattletimes.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "sfchronicle.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.1667
+          },
+          "slate.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.0
+          },
+          "statnews.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.2
+          },
+          "telegraph.co.uk": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "theatlantic.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.0
+          },
+          "thedailybeast.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "thedispatch.com": {
+            "documents": 26,
+            "predicted_wire_half": 0.0385
+          },
+          "thegatewaypundit.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.1667
+          },
+          "theguardian.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "thehill.com": {
+            "documents": 3,
+            "predicted_wire_half": 1.0
+          },
+          "theintercept.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.2
+          },
+          "upi.com": {
+            "documents": 3,
+            "predicted_wire_half": 1.0
+          },
+          "vox.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.0
+          },
+          "washingtonexaminer.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "washingtonpost.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.0
+          }
+        },
+        "by_month": {
+          "2026-01": {
+            "documents": 28,
+            "predicted_wire_half": 0.1429
+          },
+          "2026-02": {
+            "documents": 17,
+            "predicted_wire_half": 0.1765
+          },
+          "2026-03": {
+            "documents": 23,
+            "predicted_wire_half": 0.3478
+          },
+          "2026-04": {
+            "documents": 21,
+            "predicted_wire_half": 0.0476
+          },
+          "2026-05": {
+            "documents": 20,
+            "predicted_wire_half": 0.2
+          },
+          "2026-06": {
+            "documents": 19,
+            "predicted_wire_half": 0.1579
+          },
+          "2026-07": {
+            "documents": 14,
+            "predicted_wire_half": 0.0
+          },
+          "2026-08": {
+            "documents": 21,
+            "predicted_wire_half": 0.1429
+          },
+          "2026-09": {
+            "documents": 103,
+            "predicted_wire_half": 0.3204
+          }
+        },
+        "lean_gap_by_period": {
+          "september": {
+            "lean_left": {
+              "documents": 37,
+              "predicted_wire_half": 0.3784
+            },
+            "lean_right": {
+              "documents": 18,
+              "predicted_wire_half": 0.3333
+            },
+            "gap_percentage_points": 4.5
+          },
+          "january_to_august": {
+            "lean_left": {
+              "documents": 31,
+              "predicted_wire_half": 0.1613
+            },
+            "lean_right": {
+              "documents": 32,
+              "predicted_wire_half": 0.125
+            },
+            "gap_percentage_points": 3.6
+          },
+          "whole_suite": {
+            "lean_left": {
+              "documents": 68,
+              "predicted_wire_half": 0.2794
+            },
+            "lean_right": {
+              "documents": 50,
+              "predicted_wire_half": 0.2
+            },
+            "gap_percentage_points": 7.9
+          }
+        },
+        "reading": "Share of each group the ISOT model assigns to the corpus's wire service half, which that corpus treats as real. No accuracy is reported and none is available: the OOD suite carries no veracity labels (D001). No group here is established as more or less truthful than another, and the low_quality flag is confounded with political lean (D017), so a high fake share for flagged outlets is not evidence that the model works."
       },
-      "lean_left": {
-        "documents": 136,
-        "predicted_wire_half": 0.4779
-      },
-      "lean_right": {
-        "documents": 67,
-        "predicted_wire_half": 0.3731
-      },
-      "left": {
-        "documents": 51,
-        "predicted_wire_half": 0.4314
-      },
-      "right": {
-        "documents": 60,
-        "predicted_wire_half": 0.3
+      "structure_only": {
+        "condition": "structure_only",
+        "corpus": {
+          "id": "ood_suite_2026",
+          "sha256": "1adb5673758262806c14d5edec3c8b02dd6a338276132734bb0f5d0dd3322415",
+          "record_count": 266,
+          "frozen_at": "2026-09-16T14:36:20.641501+00:00",
+          "path": "data/ood/frozen-v4"
+        },
+        "isot_held_out_accuracy": 0.8184,
+        "train_subsample": null,
+        "ood_documents": 266,
+        "ood_predicted_wire_half_overall": 0.5639,
+        "by_stratum": {
+          "national": {
+            "documents": 73,
+            "predicted_wire_half": 0.6849
+          },
+          "partisan": {
+            "documents": 136,
+            "predicted_wire_half": 0.4632
+          },
+          "regional": {
+            "documents": 27,
+            "predicted_wire_half": 0.3704
+          },
+          "wire": {
+            "documents": 30,
+            "predicted_wire_half": 0.9
+          }
+        },
+        "by_lean": {
+          "center": {
+            "documents": 106,
+            "predicted_wire_half": 0.7358
+          },
+          "lean_left": {
+            "documents": 68,
+            "predicted_wire_half": 0.3971
+          },
+          "lean_right": {
+            "documents": 50,
+            "predicted_wire_half": 0.54
+          },
+          "left": {
+            "documents": 24,
+            "predicted_wire_half": 0.4167
+          },
+          "right": {
+            "documents": 18,
+            "predicted_wire_half": 0.4444
+          }
+        },
+        "by_low_quality_flag": {
+          "False": {
+            "documents": 248,
+            "predicted_wire_half": 0.5726
+          },
+          "True": {
+            "documents": 18,
+            "predicted_wire_half": 0.4444
+          }
+        },
+        "by_publisher": {
+          "aljazeera.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "bbc.com": {
+            "documents": 22,
+            "predicted_wire_half": 0.5455
+          },
+          "bloomberg.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.3333
+          },
+          "bostonglobe.com": {
+            "documents": 9,
+            "predicted_wire_half": 0.2222
+          },
+          "breitbart.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.5
+          },
+          "cbsnews.com": {
+            "documents": 8,
+            "predicted_wire_half": 0.625
+          },
+          "cnbc.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "csmonitor.com": {
+            "documents": 7,
+            "predicted_wire_half": 0.2857
+          },
+          "dailykos.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "dailymail.co.uk": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "denverpost.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "forbes.com": {
+            "documents": 17,
+            "predicted_wire_half": 0.6471
+          },
+          "foxnews.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "jacobin.com": {
+            "documents": 3,
+            "predicted_wire_half": 1.0
+          },
+          "liverpoolecho.co.uk": {
+            "documents": 3,
+            "predicted_wire_half": 0.3333
+          },
+          "manchestereveningnews.co.uk": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "motherjones.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.1667
+          },
+          "nationalpost.com": {
+            "documents": 7,
+            "predicted_wire_half": 0.7143
+          },
+          "nature.com": {
+            "documents": 18,
+            "predicted_wire_half": 1.0
+          },
+          "nbcnews.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "newscientist.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.8333
+          },
+          "nypost.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "pbs.org": {
+            "documents": 5,
+            "predicted_wire_half": 0.0
+          },
+          "reason.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "reuters.com": {
+            "documents": 27,
+            "predicted_wire_half": 0.8889
+          },
+          "seattletimes.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "sfchronicle.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.5
+          },
+          "slate.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.2
+          },
+          "statnews.com": {
+            "documents": 5,
+            "predicted_wire_half": 1.0
+          },
+          "telegraph.co.uk": {
+            "documents": 3,
+            "predicted_wire_half": 0.3333
+          },
+          "theatlantic.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.0
+          },
+          "thedailybeast.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.0
+          },
+          "thedispatch.com": {
+            "documents": 26,
+            "predicted_wire_half": 0.5
+          },
+          "thegatewaypundit.com": {
+            "documents": 6,
+            "predicted_wire_half": 0.5
+          },
+          "theguardian.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "thehill.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "theintercept.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.4
+          },
+          "upi.com": {
+            "documents": 3,
+            "predicted_wire_half": 1.0
+          },
+          "vox.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.4
+          },
+          "washingtonexaminer.com": {
+            "documents": 3,
+            "predicted_wire_half": 0.6667
+          },
+          "washingtonpost.com": {
+            "documents": 5,
+            "predicted_wire_half": 0.8
+          }
+        },
+        "by_month": {
+          "2026-01": {
+            "documents": 28,
+            "predicted_wire_half": 0.5357
+          },
+          "2026-02": {
+            "documents": 17,
+            "predicted_wire_half": 0.5294
+          },
+          "2026-03": {
+            "documents": 23,
+            "predicted_wire_half": 0.7391
+          },
+          "2026-04": {
+            "documents": 21,
+            "predicted_wire_half": 0.6667
+          },
+          "2026-05": {
+            "documents": 20,
+            "predicted_wire_half": 0.65
+          },
+          "2026-06": {
+            "documents": 19,
+            "predicted_wire_half": 0.5263
+          },
+          "2026-07": {
+            "documents": 14,
+            "predicted_wire_half": 0.6429
+          },
+          "2026-08": {
+            "documents": 21,
+            "predicted_wire_half": 0.5714
+          },
+          "2026-09": {
+            "documents": 103,
+            "predicted_wire_half": 0.4951
+          }
+        },
+        "lean_gap_by_period": {
+          "september": {
+            "lean_left": {
+              "documents": 37,
+              "predicted_wire_half": 0.3784
+            },
+            "lean_right": {
+              "documents": 18,
+              "predicted_wire_half": 0.6111
+            },
+            "gap_percentage_points": -23.3
+          },
+          "january_to_august": {
+            "lean_left": {
+              "documents": 31,
+              "predicted_wire_half": 0.4194
+            },
+            "lean_right": {
+              "documents": 32,
+              "predicted_wire_half": 0.5
+            },
+            "gap_percentage_points": -8.1
+          },
+          "whole_suite": {
+            "lean_left": {
+              "documents": 68,
+              "predicted_wire_half": 0.3971
+            },
+            "lean_right": {
+              "documents": 50,
+              "predicted_wire_half": 0.54
+            },
+            "gap_percentage_points": -14.3
+          }
+        },
+        "reading": "Share of each group the ISOT model assigns to the corpus's wire service half, which that corpus treats as real. No accuracy is reported and none is available: the OOD suite carries no veracity labels (D001). No group here is established as more or less truthful than another, and the low_quality flag is confounded with political lean (D017), so a high fake share for flagged outlets is not evidence that the model works."
       }
-    },
-    "by_low_quality_flag": {
-      "False": {
-        "documents": 324,
-        "predicted_wire_half": 0.429
-      },
-      "True": {
-        "documents": 60,
-        "predicted_wire_half": 0.3
-      }
-    },
-    "by_publisher": {
-      "bbc.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.3333
-      },
-      "bostonglobe.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.4
-      },
-      "breitbart.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.2
-      },
-      "cbsnews.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.1333
-      },
-      "cnbc.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.6364
-      },
-      "csmonitor.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.4667
-      },
-      "dailykos.com": {
-        "documents": 8,
-        "predicted_wire_half": 0.125
-      },
-      "dailymail.co.uk": {
-        "documents": 15,
-        "predicted_wire_half": 0.2
-      },
-      "foxnews.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.2667
-      },
-      "jacobin.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.7273
-      },
-      "liverpoolecho.co.uk": {
-        "documents": 15,
-        "predicted_wire_half": 0.2
-      },
-      "manchestereveningnews.co.uk": {
-        "documents": 15,
-        "predicted_wire_half": 0.1333
-      },
-      "motherjones.com": {
-        "documents": 10,
-        "predicted_wire_half": 0.8
-      },
-      "nationalpost.com": {
-        "documents": 10,
-        "predicted_wire_half": 0.5
-      },
-      "nbcnews.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.4545
-      },
-      "newscientist.com": {
-        "documents": 10,
-        "predicted_wire_half": 0.3
-      },
-      "nypost.com": {
-        "documents": 13,
-        "predicted_wire_half": 0.3846
-      },
-      "reason.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.4667
-      },
-      "seattletimes.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.7333
-      },
-      "sfchronicle.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.4667
-      },
-      "statnews.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.7273
-      },
-      "telegraph.co.uk": {
-        "documents": 11,
-        "predicted_wire_half": 0.2727
-      },
-      "theatlantic.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.1818
-      },
-      "thedailybeast.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.2727
-      },
-      "thedispatch.com": {
-        "documents": 6,
-        "predicted_wire_half": 0.1667
-      },
-      "thegatewaypundit.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.5333
-      },
-      "theguardian.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.5455
-      },
-      "theintercept.com": {
-        "documents": 11,
-        "predicted_wire_half": 0.8182
-      },
-      "upi.com": {
-        "documents": 15,
-        "predicted_wire_half": 0.6
-      },
-      "vox.com": {
-        "documents": 10,
-        "predicted_wire_half": 0.1
-      },
-      "washingtonexaminer.com": {
-        "documents": 8,
-        "predicted_wire_half": 0.625
-      }
-    },
-    "reading": "Share of each group the ISOT model assigns to the corpus's wire service half, which that corpus treats as real. No accuracy is reported and none is available: the OOD suite carries no veracity labels (D001). No group here is established as more or less truthful than another, and the low_quality flag is confounded with political lean (D017), so a high fake share for flagged outlets is not evidence that the model works."
+    }
   }
 }
