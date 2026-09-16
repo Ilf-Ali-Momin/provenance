@@ -8,6 +8,21 @@
 #
 # Both services bind to 127.0.0.1 only. A database reachable from the local
 # network is the kind of exposure this project is otherwise built to prevent.
+#
+# Networks are split to serve SECURITY.md control 1's last requirement: the
+# fetcher runs "with egress restricted at the network level to the public
+# internet only, with no route to internal services". The worker joins `queue`
+# and the default bridge; it is not on `backend`, so it has no route to
+# Postgres. It must reach Redis, since that is the queue it consumes.
+#
+# What this does NOT do, stated plainly: Docker networks restrict routing
+# between containers. They are not an egress firewall, so a worker that is
+# fully compromised still reaches the public internet and anything the host can
+# route to outside these networks. The control as SECURITY.md writes it needs
+# firewall rules at the host or provider level, and compose cannot express
+# them. This is the part of control 1 that is defence in depth rather than
+# primary, and the primary defences - validation, pinning, redirect
+# revalidation - are in the fetcher itself (D015).
 
 services:
   postgres:
@@ -21,8 +36,7 @@ services:
       # Postgres refuses to start on an existing cluster without this when the
       # data directory is a named volume owned by a non default uid.
       PGDATA: /var/lib/postgresql/data/pgdata
-    ports:
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    networks: [backend]
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./infra/init-pgvector.sql:/docker-entrypoint-initdb.d/00-pgvector.sql:ro
@@ -55,8 +69,7 @@ services:
       - 256mb
       - --maxmemory-policy
       - allkeys-lru
-    ports:
-      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    networks: [queue]
     volumes:
       - redisdata:/data
     healthcheck:
@@ -74,6 +87,68 @@ services:
     cpus: 0.5
     pids_limit: 128
 
+  api:
+    build: .
+    depends_on:
+      redis: {condition: service_healthy}
+      postgres: {condition: service_healthy}
+    environment:
+      APP_REDIS_URL: redis://redis:6379/0
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
+      APP_API_KEYS: ${APP_API_KEYS:-}
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    networks: [backend, queue]
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health/live')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 256
+
+  worker:
+    build: .
+    command: ["python", "-m", "pipeline.worker"]
+    depends_on:
+      redis: {condition: service_healthy}
+    environment:
+      APP_REDIS_URL: redis://redis:6379/0
+      APP_QUEUE_NAME: ${APP_QUEUE_NAME:-fetch}
+    # queue for Redis, default for the public internet. Deliberately not on
+    # `backend`: this is the container that talks to hostile hosts, and it has
+    # no reason to reach Postgres.
+    networks: [queue, egress]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 256
+
 volumes:
   pgdata:
   redisdata:
+
+networks:
+  # internal: true means no route off the host. Postgres is reachable only by
+  # the API; Redis only by the API and the worker. Neither is published to the
+  # host here - see docker-compose.dev.yml, which opts into that deliberately.
+  backend:
+    internal: true
+  queue:
+    internal: true
+  # The worker's route to the public internet, and the only egress in the file.
+  egress:

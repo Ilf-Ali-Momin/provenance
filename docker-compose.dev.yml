@@ -1,0 +1,26 @@
+# Development overlay. NOT the deployed topology.
+#
+# docker-compose.yml keeps Postgres and Redis on internal networks, so neither
+# is reachable from the host. That is correct for a deployment and impossible
+# to develop against, because the tests run on the host rather than in a
+# container.
+#
+# This file publishes both to loopback only. It is a separate file rather than
+# a default so the exposure is something you opt into by naming it, and so the
+# hardened topology is what runs when nobody thinks about it.
+#
+#     docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d redis
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    networks: [backend, devaccess]
+
+  redis:
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    networks: [queue, devaccess]
+
+networks:
+  devaccess:

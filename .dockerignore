@@ -1,0 +1,10 @@
+data/
+.venv/
+.git/
+docs/
+context/
+eval/
+tests/
+tools/
+**/__pycache__/
+*.pdf
