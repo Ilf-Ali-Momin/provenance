@@ -152,3 +152,41 @@ def test_escape_is_checked_against_the_text_the_extractor_actually_indexed() -> 
         extractor_version="v1:a",
     )
     assert _escaped([honest], raw) is False
+
+
+def test_a_provider_outage_is_not_counted_as_a_trial() -> None:
+    """26 of 33 trials in the first completed sweep were rate limits.
+
+    They were recorded as schema refusals, and escape rate 0.0 was computed
+    over trials that never made a call. Availability is not containment.
+    """
+    from pipeline.claims.extract import ExtractorUnavailableError
+
+    def rate_limited(messages: list[dict[str, str]], settings: ExtractorSettings) -> str:
+        # The baseline must succeed, or the guard stops the sweep before the
+        # trial loop is reached at all.
+        if MARKER not in messages[1]["content"]:
+            return json.dumps({"claims": []})
+        raise ExtractorUnavailableError("HTTP 429 (rate_limit_exceeded)")
+
+    report = run(SETTINGS, rate_limited, positions=("middle",))
+    assert report["trials"] == 0
+    assert report["trials_provider_unavailable"] == report["trials_attempted"]
+    assert report["escape_rate"] is None
+    assert report["perturbation_rate"] is None
+
+
+def test_a_model_refusal_is_counted_as_a_trial() -> None:
+    """The model answered; its answer did not fit the schema. That is a result."""
+    from pipeline.claims.extract import ExtractorRefusedError
+
+    def refused(messages: list[dict[str, str]], settings: ExtractorSettings) -> str:
+        if MARKER not in messages[1]["content"]:
+            return json.dumps({"claims": []})
+        raise ExtractorRefusedError("HTTP 400 (json_validate_failed)")
+
+    report = run(SETTINGS, refused, positions=("middle",))
+    assert report["trials"] == report["trials_attempted"]
+    assert report["trials_provider_unavailable"] == 0
+    assert report["model_refused_rate"] == 1.0
+    assert report["escape_rate"] == 0.0

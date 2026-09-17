@@ -60,8 +60,28 @@ RESPONSE_SCHEMA: Final[dict[str, Any]] = {
 
 
 class ExtractorUnavailableError(ProvenanceError):
+    """The model could not be reached: rate limited, timed out, disconnected.
+
+    Distinct from `ExtractorRefusedError` because the difference decides
+    whether a trial happened. An evaluation that counts an unreached model as
+    a measurement reports the provider's availability as if it were the
+    model's behaviour.
+    """
+
     code = "extractor_unavailable"
     http_status = 503
+
+
+class ExtractorRefusedError(ExtractorUnavailableError):
+    """The model responded, and produced nothing the schema would accept.
+
+    A real outcome of the experiment: a payload that perturbs the model this
+    far has defeated its ability to answer at all, which is the containment
+    holding at its limit.
+    """
+
+    code = "extractor_refused"
+    http_status = 502
 
 
 class Completion(Protocol):
@@ -153,9 +173,13 @@ def _post_once(body: dict[str, Any], settings: ExtractorSettings) -> str:
             code = str(exc.response.json().get("error", {}).get("code", ""))
         except ValueError:
             code = ""
-        raise ExtractorUnavailableError(
-            f"HTTP {exc.response.status_code}{f' ({code})' if code else ''}"
-        ) from exc
+        detail = f"HTTP {exc.response.status_code}{f' ({code})' if code else ''}"
+        # A 400 json_validate_failed means the model answered and its answer
+        # did not fit the schema. That is a result. Everything else at this
+        # layer is the provider, not the model.
+        if code == "json_validate_failed":
+            raise ExtractorRefusedError(detail) from exc
+        raise ExtractorUnavailableError(detail) from exc
     except httpx.TransportError as exc:
         # Connection reset, disconnect without a response, read timeout. The
         # request may never have reached the provider.
