@@ -123,9 +123,15 @@ def sample(
 
 
 def to_form(rows: list[dict[str, object]]) -> str:
-    """One JSON object per line, with empty `spans` for a human to fill."""
+    """One JSON object per line, with empty `spans` for a human to fill.
+
+    `reviewed` is separate from `spans` because an annotated passage with no
+    claims is a real data point the guideline asks for by name, and `spans: []`
+    cannot distinguish it from a passage nobody has opened yet.
+    """
     return "\n".join(
-        json.dumps({**row, "spans": [], "notes": ""}, ensure_ascii=False) for row in rows
+        json.dumps({**row, "spans": [], "notes": "", "reviewed": False}, ensure_ascii=False)
+        for row in rows
     )
 
 

@@ -138,3 +138,23 @@ Truth. No span is marked true or false, and no field exists to record it. This
 set trains and evaluates nothing about veracity (D001); it measures whether the
 extractor finds the same *checkable* statements a human finds, and labels them
 with the same type.
+
+## The tool
+
+```bash
+PYTHONPATH=. .venv/bin/python -m tools.annotate
+```
+
+Serves the 200 passages at `http://127.0.0.1:8777/`, one at a time. Select text,
+then press `1`–`4` for the four types. `0` marks a passage as having no claims
+and advances — that is a real annotation, not a skip, and §"Passage with no
+claims at all" above is why it counts. `j`/`k` move, `u` removes the last span,
+and the notes box is for Procedure step 3.
+
+Every span is written to `eval/annotation/passages.jsonl` as you mark it, so
+stopping costs nothing and reopening resumes at the first unreviewed passage.
+
+The tool does not show extractor output, by Procedure step 4. It also refuses a
+span that falls outside the passage, inverts, overlaps another, or carries a
+type outside the four — those would be gold annotations the scorer could not
+use, and finding them at scoring time is worse than being told now.

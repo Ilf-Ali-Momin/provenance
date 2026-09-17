@@ -53,6 +53,13 @@ def load_annotations(path: Path = ANNOTATIONS) -> list[dict[str, object]]:
     zero recall, and someone reading the table later would see numbers rather
     than an absence. Refusing is the only honest behaviour: nothing in this
     project may supply the gold standard (D035).
+
+    Annotated-ness is read from `reviewed`, not from `spans`. Selecting rows
+    whose `spans` are non-empty drops exactly the passages the guideline calls
+    a data point - "a passage with zero spans is a data point, and the
+    extractor is scored on returning zero there too" - so an extractor that
+    invented claims in empty commentary was scored only on the passages where
+    claims existed, and its false positives there never counted.
     """
     if not path.exists():
         msg = f"no annotation file at {path}; run eval.annotation.sample first"
@@ -60,17 +67,22 @@ def load_annotations(path: Path = ANNOTATIONS) -> list[dict[str, object]]:
     rows = [
         json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
-    annotated = [r for r in rows if r.get("spans")]
+    # `reviewed` is authoritative where it exists. A file written before the
+    # field existed is read the old way rather than reported as unannotated.
+    if any("reviewed" in r for r in rows):
+        annotated = [r for r in rows if r.get("reviewed")]
+    else:
+        annotated = [r for r in rows if r.get("spans")]
     if not annotated:
         msg = (
-            f"{path} holds {len(rows)} passages and no spans. It has not been "
-            "annotated yet, and an unannotated set scores as zero recall rather "
-            "than as an absence. See docs/annotation-guideline.md."
+            f"{path} holds {len(rows)} passages and none marked reviewed. It has "
+            "not been annotated yet, and an unannotated set scores as zero recall "
+            "rather than as an absence. See docs/annotation-guideline.md."
         )
         raise NotAnnotatedError(msg)
     if len(annotated) < len(rows):
         logger.warning(
-            "scoring %d of %d passages; the rest carry no spans",
+            "scoring %d of %d passages; the rest are not marked reviewed",
             len(annotated),
             len(rows),
         )
