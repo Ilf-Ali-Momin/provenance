@@ -292,7 +292,18 @@ def extract_claims(
         # A model that cannot produce the schema produces nothing. There is no
         # salvage path that does not involve trusting free text.
         logger.warning("extraction_unparseable", version=version, detail=type(exc).__name__)
-        return [], {"extractor_version": version, "claims": 0, "dropped": 0, "unparseable": True}
+        # `injection_signals` belongs here too. The detector ran before the
+        # call, so the signal exists; omitting it from this branch made the
+        # record's shape depend on whether the model produced valid JSON, and a
+        # caller reading `report.get("injection_signals")` saw a clean passage
+        # wherever the model had failed.
+        return [], {
+            "extractor_version": version,
+            "claims": 0,
+            "dropped": 0,
+            "unparseable": True,
+            "injection_signals": signals,
+        }
 
     claims, dropped = validate_offsets(raw, source, version, settings.max_claim_chars)
     if dropped:

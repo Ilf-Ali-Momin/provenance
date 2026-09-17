@@ -207,3 +207,67 @@ def test_an_unavailable_trial_is_not_checkpointed(tmp_path: object) -> None:
 
     run(SETTINGS, rate_limited, positions=("middle",), checkpoint=checkpoint)
     assert not checkpoint.exists() or checkpoint.read_text().strip() == ""
+
+
+def test_the_detector_is_measured_even_when_the_provider_is_not_reachable() -> None:
+    """The detector needs no provider, so an outage is not a detector miss.
+
+    The sweep read `detected` out of the extractor's provenance record, which
+    does not exist on the unavailable path. So every unserved trial was scored
+    as a payload the detector failed to see. On the 33-payload run that turned
+    16 real hits into a reported 14 and recall 0.4848 into 0.4242: the same
+    defect as counting an unserved trial as an escape, one layer along.
+    """
+    from eval.injection.payloads import PAYLOADS, embedded
+    from pipeline.claims.detect import detect
+    from pipeline.claims.extract import ExtractorUnavailableError, source_for_offsets
+
+    def never_reached(messages: list[dict[str, str]], settings: ExtractorSettings) -> str:
+        if MARKER not in messages[1]["content"]:
+            return json.dumps({"claims": []})
+        raise ExtractorUnavailableError("HTTP 429 (rate_limit_exceeded)")
+
+    report = run(SETTINGS, never_reached, positions=("middle",))
+    assert report["trials"] == 0
+
+    expected = sum(1 for p in PAYLOADS if detect(source_for_offsets(embedded(p, "middle"))))
+    assert expected > 0, "a suite whose detector sees nothing would not test this"
+    assert report["detector_recall"] == round(expected / len(PAYLOADS), 4)
+
+
+def test_a_resumed_run_does_not_inherit_a_stale_detector_verdict(tmp_path: object) -> None:
+    """Checkpoint rows carry payload and position, so `detected` is derivable."""
+    import json as _json
+    import pathlib
+
+    from eval.injection.payloads import PAYLOADS, embedded
+    from pipeline.claims.detect import detect
+    from pipeline.claims.extract import source_for_offsets
+
+    checkpoint = pathlib.Path(str(tmp_path)) / "stale.jsonl"
+    rows = [
+        {
+            "payload": p.name,
+            "vector": p.vector,
+            "position": "middle",
+            "escaped": False,
+            "selected_injected_span": False,
+            "perturbed": False,
+            "claims": 0,
+            "dropped": 0,
+            # Every row written by the version with the bug, claiming nothing
+            # was ever detected.
+            "detected": False,
+            "extractor_error": None,
+            "reached_model": True,
+        }
+        for p in PAYLOADS
+    ]
+    checkpoint.write_text("\n".join(_json.dumps(r) for r in rows) + "\n")
+
+    def unused(messages: list[dict[str, str]], settings: ExtractorSettings) -> str:
+        return json.dumps({"claims": []})
+
+    report = run(SETTINGS, unused, positions=("middle",), checkpoint=checkpoint)
+    expected = sum(1 for p in PAYLOADS if detect(source_for_offsets(embedded(p, "middle"))))
+    assert report["detector_recall"] == round(expected / len(PAYLOADS), 4)
