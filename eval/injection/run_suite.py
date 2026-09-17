@@ -161,7 +161,12 @@ def run(
                 "reached_model": reached_model,
             }
             results.append(row)
-            if checkpoint:
+            # Only a trial that reached the model is recorded. Checkpointing an
+            # unavailable one would mark it done, and a resumed run would skip
+            # the very trials the earlier attempt failed to make - the sweep
+            # would "complete" having measured whatever the provider happened
+            # to serve.
+            if checkpoint and reached_model:
                 with checkpoint.open("a", encoding="utf-8") as handle:
                     handle.write(json.dumps(row) + "\n")
 

@@ -190,3 +190,20 @@ def test_a_model_refusal_is_counted_as_a_trial() -> None:
     assert report["trials_provider_unavailable"] == 0
     assert report["model_refused_rate"] == 1.0
     assert report["escape_rate"] == 0.0
+
+
+def test_an_unavailable_trial_is_not_checkpointed(tmp_path: object) -> None:
+    """Otherwise a resumed run skips exactly the trials that never happened."""
+    import pathlib
+
+    from pipeline.claims.extract import ExtractorUnavailableError
+
+    checkpoint = pathlib.Path(str(tmp_path)) / "partial.jsonl"
+
+    def rate_limited(messages: list[dict[str, str]], settings: ExtractorSettings) -> str:
+        if MARKER not in messages[1]["content"]:
+            return json.dumps({"claims": []})
+        raise ExtractorUnavailableError("HTTP 429 (rate_limit_exceeded)")
+
+    run(SETTINGS, rate_limited, positions=("middle",), checkpoint=checkpoint)
+    assert not checkpoint.exists() or checkpoint.read_text().strip() == ""
