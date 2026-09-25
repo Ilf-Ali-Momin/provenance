@@ -70,6 +70,10 @@ ml = [
   "torch>=2.13",
   "transformers>=5.16",
   "datasets>=5.0",
+  # M3, approved 2026-09-25. Export side only: onnxruntime.quantization imports
+  # `onnx` to rewrite the graph. The serving container runs onnxruntime against
+  # an already quantised file and never loads this.
+  "onnx>=1.17",
 ]
 
 [dependency-groups]
