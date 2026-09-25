@@ -213,6 +213,15 @@ class WikimediaSource:
         body: dict[str, object] = json.loads(response.text)
         return body
 
+    def fetch_json(self, url: str) -> dict[str, object]:
+        """Issue one API request through this source's configured transport.
+
+        Public because page selection needs the same transport, the same user
+        agent and the same guard, and reaching into a private attribute to get
+        them is how a second, unchecked HTTP path appears later.
+        """
+        return self._fetch_json(url)
+
     def _batch_url(self, titles: list[str]) -> str:
         query = urlencode(
             {
