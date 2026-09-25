@@ -116,6 +116,99 @@ schema_version: 1
 # ---------------------------------------------------------------------------
 
 corpora:
+  - id: reference_en_wikipedia_org
+    name: English Wikipedia (article plaintext extracts)
+    role: retrieval_reference
+    purpose: >-
+      Background reference material a news claim is checked against: figures, timelines
+      and institutional detail that a news article assumes its reader knows.
+    source_url: https://en.wikipedia.org/w/api.php
+    access_date: '2026-09-25'
+    snapshot_date: '2026-09-25'
+    publisher: Wikimedia Foundation
+    licence: CC-BY-SA-4.0
+    licence_url: https://creativecommons.org/licenses/by-sa/4.0/deed.en
+    licence_evidence: >-
+      Read from the wiki's own API on 2026-09-25, not from documentation or memory.
+      action=query&meta=siteinfo&siprop=rightsinfo returned "Creative Commons
+      Attribution-Share Alike 4.0". Re-read before any rebuild; a relicensing
+      invalidates every attribution string already in the index.
+    attribution: >-
+      Per document, generated at index time and stored on every chunk, in the form
+      '"<title>", Wikipedia (<url>), CC-BY-SA-4.0 (<licence url>)'. D046 makes a
+      chunk without one unrepresentable rather than discouraged.
+    redistribution: permitted_with_attribution
+    terms_notes: >-
+      Share-alike obliges derivative works to carry the same licence. A card quoting a
+      retrieved passage with attribution is a quotation, not a derivative of the article,
+      so the obligation does not propagate to the card's own text; the passage stays under
+      BY-SA wherever it appears, which is why the licence is stored per chunk rather than
+      inferred at render time. Wikimedia's user agent policy requires a reachable contact
+      and is enforced server side: a request carrying a placeholder contact is answered
+      with HTTP 403 and "Please respect our robot policy". Verified 2026-09-25.
+    training_use: prohibited
+    training_use_reason: Retrieval reference only. Nothing in this project trains on it.
+    evaluation_use: permitted
+    checked_in: false
+    retrieval:
+      method: api
+      script: pipeline/retrieval/sources.py
+      notes: >-
+        One page per request. prop=extracts with explaintext caps exlimit at 1 for whole
+        article extracts; a 50 title batch returns 49 empty extracts and reports the cap
+        only in a warnings block, so the corpus would be missing 98% of its text with
+        every gap looking like a page that legitimately had no prose. Measured 2026-09-25.
+        Requests are spaced by REQUEST_INTERVAL_S. FETCH_USER_AGENT must carry a working
+        contact or the source refuses to start.
+    frozen: false
+    personal_data:
+      contains: true
+      lawful_basis: legitimate interest (research), as for the OOD suite
+      balancing_test: docs/balancing-test.md
+      retention: >-
+        Rebuilt rather than retained; the index is regenerable from the manifest.
+    notes: >-
+      Page selection is a corpus design decision made in the build script, not inside the
+      fetch loop, and belongs here once a selection exists. Not yet built, so there is
+      no record_count, no sha256, and frozen is false.
+
+  - id: reference_en_wikinews_org
+    name: English Wikinews (article plaintext extracts)
+    role: retrieval_reference
+    purpose: News prose reference material, the domain claims are actually made in and the
+      closer match to what the extractor produces.
+    source_url: https://en.wikinews.org/w/api.php
+    access_date: '2026-09-25'
+    snapshot_date: '2026-09-25'
+    publisher: Wikimedia Foundation
+    licence: CC-BY-4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    licence_evidence: >-
+      Read from the wiki's own API on 2026-09-25. siteinfo rightsinfo returned
+      "Creative Commons Attribution 4.0". Note this is BY, not BY-SA, and not the
+      CC BY 2.5 that older documentation and memory report -- the difference was
+      found by reading the API rather than asserting it.
+    attribution: >-
+      Per document, stored on every chunk, in the form '"<title>", Wikinews
+      (<url>), CC-BY-4.0 (<licence url>)'.
+    redistribution: permitted_with_attribution
+    terms_notes: Attribution only, no share-alike. Same user agent policy as Wikipedia.
+    training_use: prohibited
+    training_use_reason: Retrieval reference only.
+    evaluation_use: permitted
+    checked_in: false
+    retrieval:
+      method: api
+      script: pipeline/retrieval/sources.py
+      notes: As for Wikipedia; same exlimit cap and the same one page per request.
+    frozen: false
+    personal_data:
+      contains: true
+      lawful_basis: legitimate interest (research), as for the OOD suite
+      balancing_test: docs/balancing-test.md
+      retention: Rebuilt rather than retained.
+    notes: Not yet built. No record_count, no sha256, frozen false.
+
   - id: isot_style_kaggle_mirror
     name: ISOT style fake news corpus (HuggingFace mirror)
     role: leakage_demonstration_only
