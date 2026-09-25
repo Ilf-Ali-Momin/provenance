@@ -8,6 +8,8 @@ import pytest
 from pipeline.net.config import FetchSettings
 from pipeline.retrieval.sources import (
     LICENCES,
+    PLACEHOLDER_TOKENS,
+    RESERVED_SUFFIXES,
     WIKINEWS,
     WIKIPEDIA,
     SourceUnavailableError,
@@ -16,7 +18,9 @@ from pipeline.retrieval.sources import (
     check_user_agent,
 )
 
-REAL_AGENT = "ProvenanceBot/0.1 (+https://provenance.test/bot; bot@provenance.test)"
+# A syntactically ordinary contact. Nothing here dials out, but the string has
+# to pass the guard the way a real deployment's would.
+REAL_AGENT = "ProvenanceBot/0.1 (+https://provenance-bot.dev/bot; bot@provenance-bot.dev)"
 
 
 def _settings(agent: str = REAL_AGENT) -> FetchSettings:
@@ -38,11 +42,48 @@ def _source(pages: list[dict[str, object]], host: str = WIKIPEDIA) -> WikimediaS
     )
 
 
-def test_a_placeholder_contact_is_refused() -> None:
-    """Wikimedia's policy wants a reachable operator; an unreachable address
-    reads as compliance without being it."""
-    with pytest.raises(SourceUnavailableError, match="placeholder contact"):
+def test_a_reserved_domain_is_refused() -> None:
+    """RFC 2606 and RFC 6761 names never resolve; the complaint reaches no one."""
+    with pytest.raises(SourceUnavailableError, match="nobody can reach"):
         check_user_agent(_settings("ProvenanceBot/0.1 (+https://example.invalid/bot)"))
+
+
+@pytest.mark.parametrize(
+    "agent",
+    [
+        "ProvenanceBot/0.1 (+https://your-site/bot; you@your-domain)",
+        "ProvenanceBot/0.1 (+https://yourdomain.com/bot)",
+        "ProvenanceBot/0.1 (+https://changeme/bot)",
+        "ProvenanceBot/0.1 (TODO: add contact)",
+        "ProvenanceBot/0.1 (+https://bot.test/x)",
+        "ProvenanceBot/0.1 (+https://bot.localhost/x)",
+    ],
+)
+def test_template_text_left_in_place_is_refused(agent: str) -> None:
+    """The gap the first guard had.
+
+    It listed only example.*, so `https://your-site/bot; you@your-domain` — this
+    project's own placeholder — passed it, and Wikimedia answered 200. The
+    remote host does not catch this: a well formed agent naming a nonexistent
+    domain is served normally, so the check has to be here or nowhere.
+    """
+    with pytest.raises(SourceUnavailableError, match="nobody can reach"):
+        check_user_agent(_settings(agent))
+
+
+def test_a_host_merely_containing_a_reserved_word_is_allowed() -> None:
+    """`.test` is reserved; `testing-news.org` is somebody's actual domain."""
+    check_user_agent(_settings("ProvenanceBot/0.1 (+https://testing-news.org/bot)"))
+
+
+def test_the_error_names_what_it_objected_to() -> None:
+    with pytest.raises(SourceUnavailableError, match="your-domain"):
+        check_user_agent(_settings("ProvenanceBot/0.1 (+https://ok.org; you@your-domain)"))
+
+
+def test_the_guard_covers_both_families() -> None:
+    assert ".invalid" in RESERVED_SUFFIXES
+    assert "your-site" in PLACEHOLDER_TOKENS
 
 
 def test_the_projects_current_default_is_the_one_that_is_refused() -> None:

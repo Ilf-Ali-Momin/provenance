@@ -40,6 +40,7 @@ D030: the obligation now blocks something.
 from __future__ import annotations
 
 import json
+import re
 import time
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, Final
@@ -72,9 +73,34 @@ LICENCES: Final = {
 }
 LICENCES_READ_ON: Final = date(2026, 9, 25)
 
-# Wikimedia asks for a contact in the agent string. A default that points at a
-# domain reserved for "not a real name" is not one.
-PLACEHOLDER_CONTACTS: Final = ("example.invalid", "example.com", "example.org")
+# Wikimedia asks for a contact in the agent string, and the requirement is that
+# it be *reachable*. Two families of string cannot be, and neither Wikimedia's
+# filter nor a first version of this guard caught the second.
+#
+# Reserved names, which by RFC 2606 and RFC 6761 never resolve to a host anyone
+# operates. A complaint sent there is discarded by the DNS, not by a person.
+RESERVED_SUFFIXES: Final = (".invalid", ".test", ".example", ".localhost")
+# Template text left in place. The guard's first version listed only
+# `example.*`, so `https://your-site/bot; you@your-domain` - the placeholder
+# from this project's own instructions - passed it, and Wikimedia answered 200.
+# An agent that satisfies both the server and the check while naming a contact
+# nobody can reach is the exact failure SECURITY.md control 5 describes: it
+# reads as compliance without being it.
+PLACEHOLDER_TOKENS: Final = (
+    "example.com",
+    "example.org",
+    "example.net",
+    "your-site",
+    "your-domain",
+    "yourdomain",
+    "your-company",
+    "yourcompany",
+    "changeme",
+    "change-me",
+    "todo",
+    "fixme",
+    "xxx",
+)
 
 # One page per request, and that is the API's limit rather than a politeness
 # choice. `prop=extracts` with `explaintext` caps whole-article extracts at
@@ -106,13 +132,30 @@ def check_user_agent(settings: FetchSettings) -> None:
     it yet; something does now.
     """
     agent = settings.user_agent
-    if any(placeholder in agent for placeholder in PLACEHOLDER_CONTACTS):
+    lowered = agent.lower()
+
+    # Reserved suffixes are checked against each token rather than the whole
+    # string, so `a.invalid/path` is caught and a legitimate host whose name
+    # merely contains "test" is not.
+    tokens = re.split(r"[\s;,()<>]+", lowered)
+    reserved = [
+        token
+        for token in tokens
+        for host in [token.split("//")[-1].split("/")[0].split("@")[-1].rstrip(".")]
+        if host.endswith(RESERVED_SUFFIXES)
+    ]
+    template = [token for token in PLACEHOLDER_TOKENS if token in lowered]
+
+    if reserved or template:
+        named = ", ".join(sorted({*reserved, *template}))
         msg = (
-            f"the fetch user agent is {agent!r}, which names a placeholder contact. "
-            "Wikimedia's user agent policy requires a real way to reach the operator, "
-            "and an unreachable address reads as compliance without being it. Set "
+            f"the fetch user agent is {agent!r}, which names a contact nobody can "
+            f"reach ({named}). Wikimedia's policy requires a real way to reach the "
+            "operator, and an unreachable address is worse than none because it reads "
+            "as compliance without being it (SECURITY.md control 5). Set "
             "FETCH_USER_AGENT to an agent carrying a working contact before building "
-            "the reference corpus."
+            "the reference corpus. Note that the remote host will not catch this: a "
+            "well formed agent naming a nonexistent domain is answered 200."
         )
         raise SourceUnavailableError(msg)
 
