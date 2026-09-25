@@ -60,6 +60,12 @@ Rule based fallback extractor.
 
 **Done when.** Extraction meets its EVALUATION.md acceptance thresholds on the annotation set, and the injection suite reports a measured escape rate from the output schema, which should be zero by construction.
 
+**Status: built, not validated. Parked 2026-09-25.** Five of six deliverables are done and the second done-when clause is met: the injection suite ran to completion, 33 payloads, 33 trials, escape rate 0.0, perturbation 1.0, injected span quoted 0.4848, detector recall 0.4848.
+
+The first clause is unmet and no number is reported for it. The 200 passage annotation set is sampled but unannotated, and nothing in this project may supply those labels (D035) — an extractor scored against labels it generated measures itself. So extraction has **no measured precision or recall**, and any later document that needs one must say so rather than quote the fallback's behaviour as though it had been validated.
+
+What is in place for whoever picks this up: the written guideline (`docs/annotation-guideline.md`), the sampler, the IoU scorer, the CLI, and an annotation tool (`tools/annotate.py`). The scorer refuses an unannotated file by design and reports the denominator when partly annotated, so the set can be done in pieces. D042 records the decision to park rather than close.
+
 ---
 
 ## M3: Retrieval and stance
