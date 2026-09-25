@@ -37,6 +37,25 @@ dependencies = [
   # trafilatura -> courlan; declared directly because a security control must
   # not depend on another package's dependency choices.
   "tld>=0.13",
+  # M3, approved 2026-09-25. All three are named or required by
+  # ARCHITECTURE.md's serving design rather than chosen here.
+  #
+  # onnxruntime: "Models serve from ONNX Runtime on CPU ... quantised to int8,
+  # which keeps single passage inference in the tens of milliseconds and
+  # removes the GPU from the deployment entirely". The embedder is on the
+  # serving path too - live retrieval "embeds on the fly" - so it runs here
+  # rather than under torch, and torch stays in the optional `ml` group where
+  # export and the M0 ablations use it.
+  "onnxruntime>=1.20",
+  # tokenizers: loads the exported model's tokenizer.json without pulling
+  # transformers into the serving container. Present transitively via
+  # transformers today; declared directly for the same reason `tld` is, namely
+  # that a serving path should not depend on another package's dependency
+  # choices.
+  "tokenizers>=0.20",
+  # pgvector: the psycopg adapter for the vector type. ARCHITECTURE.md:
+  # "stored in pgvector with an HNSW index. Cosine distance."
+  "pgvector>=0.3",
 ]
 
 [project.optional-dependencies]
@@ -157,7 +176,7 @@ ignore_errors = true
 # These ship no stubs and no py.typed marker. Declaring them is not a
 # relaxation of strict mode: our own code stays fully checked, and values
 # crossing this boundary are annotated explicitly at the call site.
-module = ["sklearn.*", "datasets.*", "transformers.*"]
+module = ["sklearn.*", "datasets.*", "transformers.*", "onnxruntime.*", "pgvector.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
