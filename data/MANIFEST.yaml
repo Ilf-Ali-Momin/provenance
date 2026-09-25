@@ -116,6 +116,61 @@ schema_version: 1
 # ---------------------------------------------------------------------------
 
 corpora:
+  - id: fever_gold_evidence_dev
+    name: FEVER dev with gold evidence (CopenLU redistribution)
+    role: stance_training
+    purpose: >-
+      Stance evaluation for the NLI classifier. FEVER's labels describe a claim
+      against a specific evidence sentence, which is what the classifier outputs, so
+      the mapping to support/refute/neutral is a rename rather than an interpretation.
+    source_url: https://huggingface.co/datasets/copenlu/fever_gold_evidence
+    access_date: '2026-09-25'
+    snapshot_date: '2026-09-25'
+    publisher: CopenLU, redistributing FEVER (Thorne et al. 2018)
+    licence: CC-BY-SA-3.0 AND GPL-3.0
+    licence_url: https://huggingface.co/datasets/copenlu/fever_gold_evidence
+    licence_evidence: >-
+      Both licences are declared in the dataset card's YAML front matter, read
+      2026-09-25. Dual licensing follows the original FEVER release, whose Wikipedia
+      derived text is CC BY-SA 3.0 and whose tooling is GPL 3.0.
+    attribution: >-
+      FEVER (Thorne, Vlachos, Christodoulopoulos, Mittal 2018), redistributed with
+      gold evidence by CopenLU. Wikipedia text under CC BY-SA 3.0.
+    redistribution: permitted_with_attribution
+    terms_notes: >-
+      Downloaded at commit a6b8d891d393e97a4efac791afffb2d7de5e57c6, recorded because a
+      dataset id alone resolves to whatever the branch holds today - the same defect
+      tools/check_model_pins.py exists to catch for models. An earlier draft of
+      eval/stance/fever.py carried a REVISION constant that was the real commit's first
+      ten characters padded to forty with plausible hex; it was removed rather than
+      corrected, and the loader now records the commit the server actually served.
+    training_use: prohibited
+    training_use_reason: >-
+      Evaluation only. Nothing in this project trains a stance model; the classifier is
+      a pinned public checkpoint.
+    evaluation_use: permitted
+    checked_in: false
+    retrieval:
+      method: download_script
+      script: eval/stance/fever.py
+      notes: >-
+        PYTHONPATH=. .venv/bin/python -m eval.stance.fever --download
+    record_count: 15935
+    frozen: false
+    personal_data:
+      contains: true
+      lawful_basis: legitimate interest (research), as for the OOD suite
+      balancing_test: docs/balancing-test.md
+      retention: >-
+        Re-downloadable; not retained beyond evaluation.
+    notes: >-
+      Label distribution SUPPORTS 4638, REFUTES 4887, NOT ENOUGH INFO 6410. The NEI rows
+      carry retrieved rather than gold evidence, because a claim nothing bears on has no
+      evidence to annotate. The neutral class is therefore measured against passages a
+      retriever thought relevant and nobody confirmed were, which is not the same
+      measurement as the other two classes, and eval/stance/results.json says so beside
+      the number.
+
   - id: reference_en_wikipedia_org
     name: English Wikipedia (article plaintext extracts)
     role: retrieval_reference

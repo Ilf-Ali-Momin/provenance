@@ -1,0 +1,82 @@
+{
+  "slice": "fever_dev",
+  "pairs": 200,
+  "macro_f1": 0.7872,
+  "per_class": {
+    "support": {
+      "precision": 0.8281,
+      "recall": 0.8154,
+      "f1": 0.8217,
+      "support": 65
+    },
+    "refute": {
+      "precision": 0.8909,
+      "recall": 0.7206,
+      "f1": 0.7967,
+      "support": 68
+    },
+    "neutral": {
+      "precision": 0.679,
+      "recall": 0.8209,
+      "f1": 0.7432,
+      "support": 67
+    }
+  },
+  "confusion": {
+    "neutral->neutral": 55,
+    "neutral->refute": 6,
+    "neutral->support": 6,
+    "refute->neutral": 14,
+    "refute->refute": 49,
+    "refute->support": 5,
+    "support->neutral": 12,
+    "support->support": 53
+  },
+  "subsets": {
+    "attributed": {
+      "pairs": 1,
+      "macro_f1": 0.3333,
+      "per_class": {
+        "support": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "refute": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "neutral": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 1
+        }
+      }
+    },
+    "partial_overlap": {
+      "pairs": 0,
+      "macro_f1": null,
+      "per_class": null
+    },
+    "temporal_mismatch": {
+      "pairs": 0,
+      "macro_f1": null,
+      "per_class": null
+    },
+    "numeric": {
+      "pairs": 0,
+      "macro_f1": null,
+      "per_class": null
+    }
+  },
+  "meets_acceptance": true,
+  "acceptance": "EVALUATION.md \u00a73: macro F1 above 0.6 on the OOD slice; the attributed subset is reported separately and is not required to pass",
+  "rows": 200,
+  "retrieved_evidence_rows": 67,
+  "quantised": true,
+  "caveat": "FEVER's NOT ENOUGH INFO claims have no gold evidence by construction, so those rows carry retrieved evidence. The neutral class is therefore measured against passages a retriever thought relevant and nobody confirmed were, which is not the same measurement as the other two classes. This is one of the three slices EVALUATION.md requires reported together; MultiFC is not built (D051) and the OOD slice needs hand annotated stance labels, so this number does not stand alone."
+}
