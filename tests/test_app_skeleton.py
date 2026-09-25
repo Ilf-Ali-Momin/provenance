@@ -11,8 +11,14 @@ from pipeline.errors import ProvenanceError, UrlRejectedError
 
 @pytest.fixture
 def app() -> Flask:
-    health.clear_checks()
     application = create_app(AppSettings(environment="test"))
+    # Cleared *after* the factory runs, not before. `create_app` registers a
+    # redis readiness check when it builds its own queue, so clearing first left
+    # that check in place: "with no checks" was asserted against a probe of a
+    # live Redis, and the test passed or failed depending on whether one
+    # happened to be running on the machine. These tests state they touch no
+    # network, and this is what makes that true.
+    health.clear_checks()
 
     @application.get("/boom/<kind>")
     def boom(kind: str) -> str:
