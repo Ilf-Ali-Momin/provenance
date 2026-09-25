@@ -43,6 +43,13 @@ def test_the_table_carries_offsets_so_evidence_stays_locatable() -> None:
         assert column in SCHEMA
 
 
+def test_the_schema_records_rights_beside_every_chunk() -> None:
+    """A card quotes one passage; the attribution its licence demands has to be
+    retrievable with that passage, not only from data/MANIFEST.yaml (D046)."""
+    assert "licence      TEXT NOT NULL" in SCHEMA
+    assert "attribution  TEXT" in SCHEMA
+
+
 def test_nothing_in_the_schema_holds_a_submitted_article() -> None:
     """SECURITY.md control 6. This index is reference material; the analysis
     path never writes here."""
@@ -120,7 +127,7 @@ def test_readding_a_document_replaces_its_chunks() -> None:
     chunks retrievable with offsets into text that no longer exists."""
     connection = _FakeConnection()
     chunks = [Chunk("first sentence.", 0, 15, 0), Chunk("second sentence.", 16, 32, 1)]
-    added = _store(connection).add("doc_a", chunks)  # type: ignore[attr-defined]
+    added = _store(connection).add("doc_a", chunks, licence="CC0-1.0")  # type: ignore[attr-defined]
     assert added == 2
     assert "DELETE FROM" in connection.cur.executed[0]
     assert "INSERT INTO" in connection.cur.executed[1]
@@ -134,7 +141,9 @@ def test_adding_nothing_touches_no_sql() -> None:
 
 def test_chunk_ids_are_derived_from_the_document_and_ordinal() -> None:
     connection = _FakeConnection()
-    _store(connection).add("doc_a", [Chunk("a sentence.", 0, 11, 3)])  # type: ignore[attr-defined]
+    _store(connection).add(  # type: ignore[attr-defined]
+        "doc_a", [Chunk("a sentence.", 0, 11, 3)], licence="CC0-1.0"
+    )
     rows = connection.cur.params[1]
     assert rows[0][0] == "doc_a#3"
 

@@ -64,6 +64,12 @@ CREATE TABLE IF NOT EXISTS {TABLE} (
     text         TEXT NOT NULL,
     source_url   TEXT,
     published    TEXT,
+    -- Rights travel with the chunk, not only with the corpus in
+    -- data/MANIFEST.yaml. The index holds several sources at once and a card
+    -- quotes one passage, so the attribution its licence demands has to be
+    -- retrievable with that passage or it cannot be displayed (D046).
+    licence      TEXT NOT NULL,
+    attribution  TEXT,
     embedding    vector({DIMENSIONS}) NOT NULL
 );
 
@@ -99,6 +105,10 @@ class PgVectorStore:
     def add(self, document_id: str, chunks: list[Chunk], **columns: str | None) -> int:
         """Index one document's chunks. Re-adding a document replaces it.
 
+        `licence` is required and is a KeyError rather than a default, because a
+        chunk with no recorded terms is one a card cannot legally display and a
+        nullable column would make that state reachable.
+
         Replace rather than append, because a reference document that is
         re-fetched and re-chunked produces different boundaries: appending
         would leave the old chunks in the index, retrievable, with offsets into
@@ -116,8 +126,8 @@ class PgVectorStore:
                 sql.SQL(
                     """INSERT INTO {}
                        (chunk_id, document_id, ordinal, start_offset, end_offset,
-                        text, source_url, published, embedding)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                        text, source_url, published, licence, attribution, embedding)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
                 ).format(_TABLE),
                 [
                     (
@@ -129,6 +139,8 @@ class PgVectorStore:
                         chunk.text,
                         columns.get("source_url"),
                         columns.get("published"),
+                        columns["licence"],
+                        columns.get("attribution"),
                         vector,
                     )
                     for chunk, vector in zip(chunks, vectors, strict=True)
@@ -160,7 +172,7 @@ class PgVectorStore:
             cursor.execute(
                 sql.SQL(
                     """SELECT chunk_id, document_id, ordinal, start_offset, end_offset,
-                              text, source_url, published
+                              text, source_url, published, licence, attribution
                        FROM {} WHERE chunk_id = ANY(%s)"""
                 ).format(_TABLE),
                 (chunk_ids,),
@@ -174,5 +186,7 @@ class PgVectorStore:
                 "text",
                 "source_url",
                 "published",
+                "licence",
+                "attribution",
             ]
             return {str(row[0]): dict(zip(columns, row, strict=True)) for row in cursor.fetchall()}
