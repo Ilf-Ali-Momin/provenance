@@ -1,0 +1,83 @@
+{
+  "slice": "fever_dev",
+  "pairs": 15873,
+  "macro_f1": 0.7754,
+  "per_class": {
+    "support": {
+      "precision": 0.79,
+      "recall": 0.8144,
+      "f1": 0.802,
+      "support": 4638
+    },
+    "refute": {
+      "precision": 0.8688,
+      "recall": 0.69,
+      "f1": 0.7692,
+      "support": 4887
+    },
+    "neutral": {
+      "precision": 0.7099,
+      "recall": 0.8064,
+      "f1": 0.7551,
+      "support": 6348
+    }
+  },
+  "confusion": {
+    "neutral->neutral": 5119,
+    "neutral->refute": 465,
+    "neutral->support": 764,
+    "refute->neutral": 1275,
+    "refute->refute": 3372,
+    "refute->support": 240,
+    "support->neutral": 817,
+    "support->refute": 44,
+    "support->support": 3777
+  },
+  "subsets": {
+    "attributed": {
+      "pairs": 110,
+      "macro_f1": 0.8419,
+      "per_class": {
+        "support": {
+          "precision": 0.8148,
+          "recall": 0.9565,
+          "f1": 0.88,
+          "support": 23
+        },
+        "refute": {
+          "precision": 0.7727,
+          "recall": 0.7727,
+          "f1": 0.7727,
+          "support": 22
+        },
+        "neutral": {
+          "precision": 0.9016,
+          "recall": 0.8462,
+          "f1": 0.873,
+          "support": 65
+        }
+      }
+    },
+    "partial_overlap": {
+      "pairs": 0,
+      "macro_f1": null,
+      "per_class": null
+    },
+    "temporal_mismatch": {
+      "pairs": 0,
+      "macro_f1": null,
+      "per_class": null
+    },
+    "numeric": {
+      "pairs": 0,
+      "macro_f1": null,
+      "per_class": null
+    }
+  },
+  "meets_acceptance": null,
+  "acceptance": "EVALUATION.md \u00a73: macro F1 above 0.6 on the OOD slice; the attributed subset is reported separately and is not required to pass. This is the 'fever_dev' slice, which is reported and not gated: a classifier can clear the floor on curated NLI pairs and be useless on news text, so meets_acceptance is null here rather than true.",
+  "rows": 15873,
+  "retrieved_evidence_rows": 6348,
+  "quantised": true,
+  "caveat": "FEVER's NOT ENOUGH INFO claims have no gold evidence by construction, so those rows carry retrieved evidence. The neutral class is therefore measured against passages a retriever thought relevant and nobody confirmed were, which is not the same measurement as the other two classes. This is one of the three slices EVALUATION.md requires reported together; MultiFC is not built (D051) and the OOD slice needs hand annotated stance labels, so this number does not stand alone."
+}
