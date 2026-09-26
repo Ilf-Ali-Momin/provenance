@@ -311,57 +311,83 @@ stripped    nothing matched the publisher marker rules</pre>
 <p>Exit codes separate refusal (2) from failure (1), so a disallowed URL is never confused with an unreachable one. <code>--json</code> gives machine-readable output, <code>--outlet-name</code> masks a publisher's self-references, <code>--verbose</code> logs each network step.</p>
 
 <h2>9. Verification state</h2>
-<table>
-  <thead><tr><th>Check</th><th>Result</th></tr></thead>
-  <tbody>
-    <tr><td>pytest</td><td class="mono">341 passed, 2 deselected &middot; exit 0</td></tr>
-    <tr><td>ruff check</td><td class="mono">All checks passed &middot; exit 0</td></tr>
-    <tr><td>ruff format --check</td><td class="mono">75 files already formatted &middot; exit 0</td></tr>
-    <tr><td>mypy strict (pipeline, eval)</td><td class="mono">no issues in 36 source files &middot; exit 0</td></tr>
-    <tr><td>pre-commit --all-files</td><td class="mono">ruff, ruff-format, gitleaks all Passed &middot; exit 0</td></tr>
-  </tbody>
-</table>
-<p class="small dim">Every exit code above was read directly rather than through a pipe, for the reason given in section 6. 5,445 lines of source against 3,564 lines of tests. <code>mypy tests/</code> reports 66 errors — mostly dict invariance in test helpers — and tests are not yet in mypy's <code>files</code>; recorded in D025 rather than fixed silently.</p>
-
-<h2>10. Decisions</h2>
-<p class="small">Each entry in <code>context/DECISIONS.md</code> carries the alternatives it rejected, the reason each lost, the costs being accepted rather than solved, and the condition that would reverse it.</p>
-<table>
-  <thead><tr><th style="width:3.4em">ID</th><th>Decision</th></tr></thead>
-  <tbody>
-    <tr><td class="mono">D001</td><td>The system does not output a truth verdict</td></tr>
-    <tr><td class="mono">D002</td><td>Rhetoric detection is multilabel and span scoped, not document binary</td></tr>
-    <tr><td class="mono">D003</td><td>Retrieve then classify stance, rather than end to end</td></tr>
-    <tr><td class="mono">D004</td><td>LLM used for claim extraction only</td></tr>
-    <tr><td class="mono">D005</td><td>ONNX CPU inference, no GPU in production</td></tr>
-    <tr><td class="mono">D006</td><td>Bluesky and Reddit for the circulation signal</td></tr>
-    <tr><td class="mono">D007</td><td>Source registry stores observations, never scores</td></tr>
-    <tr><td class="mono">D008</td><td>Asynchronous URL fetch, never inline</td></tr>
-    <tr><td class="mono">D009</td><td>Frozen holdout inspected exactly twice</td></tr>
-    <tr><td class="mono">D010</td><td>The ISOT style corpus is never used for training</td></tr>
-    <tr><td class="mono">D011</td><td>Mypy strict covers <code>eval/</code> as well as <code>app/</code> and <code>pipeline/</code></td></tr>
-    <tr><td class="mono">D012</td><td><code>data/MANIFEST.yaml</code> is where corpus use restrictions are enforced</td></tr>
-    <tr><td class="mono">D013</td><td>The OOD collection is specified in writing before it is implemented</td></tr>
-    <tr><td class="mono">D014</td><td>The transformer reproduction is run at reduced scale</td></tr>
-    <tr><td class="mono">D015</td><td>The fetcher pins the connection to the address it validated</td></tr>
-    <tr><td class="mono">D016</td><td>Publisher lean is recorded as its own axis, and the stratum confound is reported rather than absorbed</td></tr>
-    <tr><td class="mono">D017</td><td><code>low_quality</code> is an orthogonal flag, not a stratum</td></tr>
-    <tr><td class="mono">D018</td><td>A publisher's own name is masked in its own articles</td></tr>
-    <tr><td class="mono">D019</td><td>Refusals end collection from a host, and <code>lastmod</code> is not a publication date</td></tr>
-    <tr><td class="mono">D020</td><td>The OOD suite is gated to English at the listing and at the page</td></tr>
-    <tr><td class="mono">D021</td><td>Text-only construction rules may be re-applied to a stored run</td></tr>
-    <tr><td class="mono">D022</td><td>OOD collection must reach beyond the live publishing window</td></tr>
-    <tr><td class="mono">D023</td><td>The aggregator stratum is left empty and reported</td></tr>
-    <tr><td class="mono">D024</td><td>The per month cap covers the publisher's whole sample, not the archive alone</td></tr>
-    <tr><td class="mono">D025</td><td>Collectors depend on a robots interface, not on the robots cache</td></tr>
-    <tr><td class="mono">D026</td><td>Publisher stripping is widened by audit, and the audit is corrected with it</td></tr>
-    <tr><td class="mono">D027</td><td>A document that is not an article is excluded by rule, before selection</td></tr>
-    <tr><td class="mono">D028</td><td>The corpus stays at 266 and the publisher pool is not widened</td></tr>
-    <tr><td class="mono">D029</td><td>The topic requirement is measured rather than dropped, and it holds</td></tr>
-    <tr><td class="mono">D030</td><td>The storage control is closed on evidence; the objection route is written but unreachable</td></tr>
-  </tbody>
-</table>
-
-<h2 class="break">11. The topic requirement, finally checked</h2>
+<!-- generated:verification -->
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+      <tr><td>pytest</td><td class="mono">1 failed, 693 passed, 20 deselected in 9.56s &middot; exit 1</td></tr>
+      <tr><td>ruff check</td><td class="mono">All checks passed! &middot; exit 0</td></tr>
+      <tr><td>ruff format --check</td><td class="mono">162 files already formatted &middot; exit 0</td></tr>
+      <tr><td>mypy strict</td><td class="mono">Success: no issues found in 93 source files &middot; exit 0</td></tr>
+      <tr><td>model pin check</td><td class="mono">every model reference is pinned to a revision &middot; exit 0</td></tr>
+      </tbody>
+    </table>
+    <p class="small"><strong>1 check(s) failing: pytest.</strong> Reported rather than omitted.</p>
+    <p class="small">93 source files under mypy strict. Regenerated 2026-09-26.</p>
+<!-- /generated:verification -->
+    <h2>10. Decisions</h2>
+<!-- generated:decisions -->
+    <p class="small">Each entry in <code>context/DECISIONS.md</code> carries the alternatives it rejected, the reason each lost, the costs being accepted rather than solved, and the condition that would reverse it. 53 decisions.</p>
+    <table>
+      <thead><tr><th style="width:3.4em">ID</th><th>Decision</th></tr></thead>
+      <tbody>
+      <tr><td class="mono">D001</td><td>The system does not output a truth verdict</td></tr>
+      <tr><td class="mono">D002</td><td>Rhetoric detection is multilabel and span scoped, not document binary</td></tr>
+      <tr><td class="mono">D003</td><td>Retrieve then classify stance, rather than end to end</td></tr>
+      <tr><td class="mono">D004</td><td>LLM used for claim extraction only</td></tr>
+      <tr><td class="mono">D005</td><td>ONNX CPU inference, no GPU in production</td></tr>
+      <tr><td class="mono">D006</td><td>Bluesky and Reddit for the circulation signal</td></tr>
+      <tr><td class="mono">D007</td><td>Source registry stores observations, never scores</td></tr>
+      <tr><td class="mono">D008</td><td>Asynchronous URL fetch, never inline</td></tr>
+      <tr><td class="mono">D009</td><td>Frozen holdout inspected exactly twice</td></tr>
+      <tr><td class="mono">D010</td><td>The ISOT style corpus is never used for training</td></tr>
+      <tr><td class="mono">D011</td><td>Mypy strict covers `eval/` as well as `app/` and `pipeline/`</td></tr>
+      <tr><td class="mono">D012</td><td>`data/MANIFEST.yaml` is where corpus use restrictions are enforced</td></tr>
+      <tr><td class="mono">D013</td><td>The OOD collection is specified in writing before it is implemented</td></tr>
+      <tr><td class="mono">D014</td><td>The transformer reproduction is run at reduced scale</td></tr>
+      <tr><td class="mono">D015</td><td>The fetcher pins the connection to the address it validated</td></tr>
+      <tr><td class="mono">D016</td><td>Publisher lean is recorded as its own axis, and the stratum confound is reported rather than absorbed</td></tr>
+      <tr><td class="mono">D017</td><td>`low_quality` is an orthogonal flag, not a stratum</td></tr>
+      <tr><td class="mono">D018</td><td>A publisher&#x27;s own name is masked in its own articles</td></tr>
+      <tr><td class="mono">D019</td><td>Refusals end collection from a host, and `lastmod` is not a publication date</td></tr>
+      <tr><td class="mono">D020</td><td>The OOD suite is gated to English at the listing and at the page</td></tr>
+      <tr><td class="mono">D021</td><td>Text-only construction rules may be re-applied to a stored run</td></tr>
+      <tr><td class="mono">D022</td><td>OOD collection must reach beyond the live publishing window</td></tr>
+      <tr><td class="mono">D023</td><td>The aggregator stratum is left empty and reported</td></tr>
+      <tr><td class="mono">D024</td><td>The per month cap covers the publisher&#x27;s whole sample, not the archive alone</td></tr>
+      <tr><td class="mono">D025</td><td>Collectors depend on a robots interface, not on the robots cache</td></tr>
+      <tr><td class="mono">D026</td><td>Publisher stripping is widened by audit, and the audit is corrected with it</td></tr>
+      <tr><td class="mono">D027</td><td>A document that is not an article is excluded by rule, before selection</td></tr>
+      <tr><td class="mono">D028</td><td>The corpus stays at 266 and the publisher pool is not widened</td></tr>
+      <tr><td class="mono">D029</td><td>The topic requirement is measured rather than dropped, and it holds</td></tr>
+      <tr><td class="mono">D030</td><td>The storage control is closed on evidence; the objection route is written but unreachable</td></tr>
+      <tr><td class="mono">D031</td><td>The log redaction filter keys on value length, not on field name</td></tr>
+      <tr><td class="mono">D032</td><td>The job result carries no article text, because a queue backend is storage</td></tr>
+      <tr><td class="mono">D033</td><td>The per domain fetch limit is global and keyed on the registrable domain</td></tr>
+      <tr><td class="mono">D034</td><td>The hardened compose topology is the default, and development opts out of it</td></tr>
+      <tr><td class="mono">D035</td><td>The annotation set is drawn from train and dev, never the frozen holdout</td></tr>
+      <tr><td class="mono">D036</td><td>&quot;Overlap by more than half&quot; is read as intersection over union above 0.5</td></tr>
+      <tr><td class="mono">D037</td><td>The fallback extractor uses surface cues, not a dependency parse</td></tr>
+      <tr><td class="mono">D038</td><td>Escape and perturbation are separate metrics, and the first version conflated them</td></tr>
+      <tr><td class="mono">D039</td><td>Claims may reach storage; a claim the size of the article may not</td></tr>
+      <tr><td class="mono">D040</td><td>A layer that needs no provider is measured on every attempt</td></tr>
+      <tr><td class="mono">D041</td><td>Annotated-ness is a field, not an inference from the spans</td></tr>
+      <tr><td class="mono">D042</td><td>M2 is parked as built-but-unvalidated rather than closed</td></tr>
+      <tr><td class="mono">D043</td><td>BM25 is implemented here rather than added as a dependency</td></tr>
+      <tr><td class="mono">D044</td><td>The two retrieval scores are normalised before they are weighted</td></tr>
+      <tr><td class="mono">D045</td><td>The embedder runs under ONNX Runtime, and its artefact is fetched rather than exported</td></tr>
+      <tr><td class="mono">D046</td><td>Rights travel with the chunk, not only with the corpus</td></tr>
+      <tr><td class="mono">D047</td><td>Wikipedia and Wikinews are the first two reference sources</td></tr>
+      <tr><td class="mono">D048</td><td>The frozen holdout may not seed the reference index</td></tr>
+      <tr><td class="mono">D049</td><td>The weight the sweep selects is reported; the score it selected on is not</td></tr>
+      <tr><td class="mono">D050</td><td>Per-channel quantisation, and two silent failures the measurement caught</td></tr>
+      <tr><td class="mono">D051</td><td>MultiFC is not built as a stance slice, because its labels are verdicts</td></tr>
+      <tr><td class="mono">D052</td><td>fp32 serves the stance classifier, departing from ARCHITECTURE.md</td></tr>
+      <tr><td class="mono">D053</td><td>The report&#x27;s self-reporting is generated; its analysis is not</td></tr>
+      </tbody>
+    </table>
+<!-- /generated:decisions -->
+    <h2 class="break">11. The topic requirement, finally checked</h2>
 <p>DATA.md asks for topics spread across politics, health, science and business so that no single news cycle dominates. The freeze reads topic from the article URL path, which resolves for 17 of 266 documents, so the requirement went unverified for the whole of M0. Measured by zero-shot entailment over the text with the MNLI model ARCHITECTURE.md already names for M3, pinned at revision <code>6f5cf0a2</code>.</p>
 
 <table>
