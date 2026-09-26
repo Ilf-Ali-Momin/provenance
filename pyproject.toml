@@ -74,6 +74,10 @@ ml = [
   # `onnx` to rewrite the graph. The serving container runs onnxruntime against
   # an already quantised file and never loads this.
   "onnx>=1.17",
+  # Generating the annotator briefing sheet (tools/annotation_brief.py) and
+  # checking that it renders. Development documents, never a serving path.
+  "reportlab>=4.2",
+  "pypdf>=5.0",
 ]
 
 [dependency-groups]
@@ -180,7 +184,15 @@ ignore_errors = true
 # These ship no stubs and no py.typed marker. Declaring them is not a
 # relaxation of strict mode: our own code stays fully checked, and values
 # crossing this boundary are annotated explicitly at the call site.
-module = ["sklearn.*", "datasets.*", "transformers.*", "onnxruntime.*", "pgvector.*"]
+module = [
+  "sklearn.*",
+  "datasets.*",
+  "transformers.*",
+  "onnxruntime.*",
+  "pgvector.*",
+  "reportlab.*",
+  "pypdf.*",
+]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
@@ -205,3 +217,16 @@ markers = [
 ]
 xfail_strict = true
 filterwarnings = ["error"]
+
+[[tool.mypy.overrides]]
+# `disallow_any_unimported` is on globally and stays on. This one module builds a
+# PDF out of reportlab's own flowable objects, so every helper's signature names
+# an untyped third-party class and the rule fires on the signature rather than on
+# anything this code does with the value.
+#
+# Narrow on purpose: the error code, one module, and a generator that ships no
+# behaviour. The M0 report's finding about seventeen suppressed checks hiding one
+# real risk is the reason this is a named code on a named file instead of
+# `ignore_errors` or a project-wide relaxation.
+module = "tools.annotation_brief"
+disable_error_code = ["no-any-unimported"]
