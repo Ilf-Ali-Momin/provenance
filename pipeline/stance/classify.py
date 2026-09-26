@@ -85,7 +85,9 @@ class OnnxStanceClassifier:
     def __init__(
         self,
         model_dir: Path,
-        quantised: bool = True,
+        # fp32 by default. See the module docstring and D052: int8 is available
+        # and is not what serves.
+        quantised: bool = False,
         max_tokens: int = MAX_TOKENS,
         threads: int = DEFAULT_THREADS,
         batch_size: int = DEFAULT_BATCH,

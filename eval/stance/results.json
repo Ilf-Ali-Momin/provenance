@@ -1,59 +1,59 @@
 {
   "slice": "fever_dev",
   "pairs": 15873,
-  "macro_f1": 0.7736,
+  "macro_f1": 0.8319,
   "per_class": {
     "support": {
-      "precision": 0.7893,
-      "recall": 0.82,
-      "f1": 0.8044,
+      "precision": 0.8744,
+      "recall": 0.8404,
+      "f1": 0.8571,
       "support": 4638
     },
     "refute": {
-      "precision": 0.865,
-      "recall": 0.6816,
-      "f1": 0.7624,
+      "precision": 0.8656,
+      "recall": 0.8064,
+      "f1": 0.835,
       "support": 4887
     },
     "neutral": {
-      "precision": 0.7093,
-      "recall": 0.805,
-      "f1": 0.7541,
+      "precision": 0.7734,
+      "recall": 0.836,
+      "f1": 0.8035,
       "support": 6348
     }
   },
   "confusion": {
-    "neutral->neutral": 5110,
-    "neutral->refute": 477,
-    "neutral->support": 761,
-    "refute->neutral": 1302,
-    "refute->refute": 3331,
-    "refute->support": 254,
-    "support->neutral": 792,
-    "support->refute": 43,
-    "support->support": 3803
+    "neutral->neutral": 5307,
+    "neutral->refute": 559,
+    "neutral->support": 482,
+    "refute->neutral": 868,
+    "refute->refute": 3941,
+    "refute->support": 78,
+    "support->neutral": 687,
+    "support->refute": 53,
+    "support->support": 3898
   },
   "subsets": {
     "attributed": {
       "pairs": 110,
-      "macro_f1": 0.8335,
+      "macro_f1": 0.9037,
       "per_class": {
         "support": {
-          "precision": 0.7692,
-          "recall": 0.8696,
-          "f1": 0.8163,
+          "precision": 0.88,
+          "recall": 0.9565,
+          "f1": 0.9167,
           "support": 23
         },
         "refute": {
-          "precision": 0.8182,
-          "recall": 0.8182,
-          "f1": 0.8182,
+          "precision": 0.8077,
+          "recall": 0.9545,
+          "f1": 0.875,
           "support": 22
         },
         "neutral": {
-          "precision": 0.8871,
-          "recall": 0.8462,
-          "f1": 0.8661,
+          "precision": 0.9661,
+          "recall": 0.8769,
+          "f1": 0.9194,
           "support": 65
         }
       }
@@ -78,64 +78,64 @@
   "acceptance": "EVALUATION.md \u00a73: macro F1 above 0.6 on the OOD slice; the attributed subset is reported separately and is not required to pass. This is the 'fever_dev' slice, which is reported and not gated: a classifier can clear the floor on curated NLI pairs and be useless on news text, so meets_acceptance is null here rather than true.",
   "rows": 15873,
   "retrieved_evidence_rows": 6348,
-  "quantised": true,
+  "quantised": false,
   "caveat": "FEVER's NOT ENOUGH INFO claims have no gold evidence by construction, so those rows carry retrieved evidence. The neutral class is therefore measured against passages a retriever thought relevant and nobody confirmed were, which is not the same measurement as the other two classes. This is one of the three slices EVALUATION.md requires reported together; MultiFC is not built (D051) and the OOD slice needs hand annotated stance labels, so this number does not stand alone.",
-  "fp32": {
-    "slice": "fever_dev_fp32",
+  "int8": {
+    "slice": "fever_dev_int8",
     "pairs": 15873,
-    "macro_f1": 0.8319,
+    "macro_f1": 0.7736,
     "per_class": {
       "support": {
-        "precision": 0.8744,
-        "recall": 0.8404,
-        "f1": 0.8571,
+        "precision": 0.7893,
+        "recall": 0.82,
+        "f1": 0.8044,
         "support": 4638
       },
       "refute": {
-        "precision": 0.8656,
-        "recall": 0.8064,
-        "f1": 0.835,
+        "precision": 0.865,
+        "recall": 0.6816,
+        "f1": 0.7624,
         "support": 4887
       },
       "neutral": {
-        "precision": 0.7734,
-        "recall": 0.836,
-        "f1": 0.8035,
+        "precision": 0.7093,
+        "recall": 0.805,
+        "f1": 0.7541,
         "support": 6348
       }
     },
     "confusion": {
-      "neutral->neutral": 5307,
-      "neutral->refute": 559,
-      "neutral->support": 482,
-      "refute->neutral": 868,
-      "refute->refute": 3941,
-      "refute->support": 78,
-      "support->neutral": 687,
-      "support->refute": 53,
-      "support->support": 3898
+      "neutral->neutral": 5110,
+      "neutral->refute": 477,
+      "neutral->support": 761,
+      "refute->neutral": 1302,
+      "refute->refute": 3331,
+      "refute->support": 254,
+      "support->neutral": 792,
+      "support->refute": 43,
+      "support->support": 3803
     },
     "subsets": {
       "attributed": {
         "pairs": 110,
-        "macro_f1": 0.9037,
+        "macro_f1": 0.8335,
         "per_class": {
           "support": {
-            "precision": 0.88,
-            "recall": 0.9565,
-            "f1": 0.9167,
+            "precision": 0.7692,
+            "recall": 0.8696,
+            "f1": 0.8163,
             "support": 23
           },
           "refute": {
-            "precision": 0.8077,
-            "recall": 0.9545,
-            "f1": 0.875,
+            "precision": 0.8182,
+            "recall": 0.8182,
+            "f1": 0.8182,
             "support": 22
           },
           "neutral": {
-            "precision": 0.9661,
-            "recall": 0.8769,
-            "f1": 0.9194,
+            "precision": 0.8871,
+            "recall": 0.8462,
+            "f1": 0.8661,
             "support": 65
           }
         }
@@ -157,7 +157,10 @@
       }
     },
     "meets_acceptance": null,
-    "acceptance": "EVALUATION.md \u00a73: macro F1 above 0.6 on the OOD slice; the attributed subset is reported separately and is not required to pass. This is the 'fever_dev_fp32' slice, which is reported and not gated: a classifier can clear the floor on curated NLI pairs and be useless on news text, so meets_acceptance is null here rather than true."
+    "acceptance": "EVALUATION.md \u00a73: macro F1 above 0.6 on the OOD slice; the attributed subset is reported separately and is not required to pass. This is the 'fever_dev_int8' slice, which is reported and not gated: a classifier can clear the floor on curated NLI pairs and be useless on news text, so meets_acceptance is null here rather than true.",
+    "quantised": true,
+    "quantisation_macro_f1_delta": 0.0583
   },
-  "quantisation_macro_f1_delta": 0.0583
+  "quantisation_macro_f1_delta": 0.0583,
+  "served": "fp32. D052: int8 costs this much macro F1 and 12.5 points of refute recall, and its answers depend on batch composition because dynamic quantisation reads activation scales off tensors that padding changes. Both artefacts are built; this is the one that serves."
 }

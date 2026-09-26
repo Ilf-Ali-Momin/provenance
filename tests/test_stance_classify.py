@@ -73,7 +73,7 @@ def test_a_missing_model_file_is_named(tmp_path: Path) -> None:
         json.dumps({"id2label": {"0": "entailment", "1": "neutral", "2": "contradiction"}}),
         encoding="utf-8",
     )
-    with pytest.raises(StanceUnavailableError, match=r"model\.int8\.onnx"):
+    with pytest.raises(StanceUnavailableError, match=r"model\.onnx"):
         OnnxStanceClassifier(tmp_path)
 
 
@@ -145,6 +145,16 @@ def test_an_empty_batch_returns_nothing() -> None:
 
 
 @pytest.mark.model
+def test_the_served_default_is_fp32() -> None:
+    """D052: int8 costs 0.0583 macro F1 and 12.5 points of refute recall, and its
+    answers depend on batch composition. Both artefacts are built; fp32 serves."""
+    _skip_without_model()
+    import inspect
+
+    assert inspect.signature(OnnxStanceClassifier).parameters["quantised"].default is False
+
+
+@pytest.mark.model
 def test_the_quantisation_delta_is_recorded() -> None:
     """EVALUATION.md asks for it measured; a gate would hide the size of the
     trade behind a pass/fail."""
@@ -213,8 +223,8 @@ def test_int8_answers_depend_on_batch_composition() -> None:
     premises = [str(r["premise"]) for r in rows]
     hypotheses = [str(r["hypothesis"]) for r in rows]
 
-    one = OnnxStanceClassifier(MODEL_DIR, batch_size=len(rows))
-    split = OnnxStanceClassifier(MODEL_DIR, batch_size=8)
+    one = OnnxStanceClassifier(MODEL_DIR, quantised=True, batch_size=len(rows))
+    split = OnnxStanceClassifier(MODEL_DIR, quantised=True, batch_size=8)
     a = [label for label, _ in one.classify(premises, hypotheses)]
     b = [label for label, _ in split.classify(premises, hypotheses)]
 

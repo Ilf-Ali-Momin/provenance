@@ -9,9 +9,10 @@ is not built (D051: its labels are veracity verdicts, not stance toward
 evidence) and the OOD slice needs hand annotated stance labels, so a run of this
 alone is one number of three and the result says so.
 
-**fp32 is scored alongside int8 when asked.** The quantisation delta in the
-model manifest is six probes and says so; `--compare-fp32` runs both over the
-same rows, which is the measurement EVALUATION.md actually asks for.
+**fp32 is what runs, because fp32 is what serves (D052).** `--compare-int8`
+scores the quantised artefact over the same rows, which is the quantisation
+delta EVALUATION.md asks for and which the model manifest's six probes were too
+few to give.
 """
 
 from __future__ import annotations
@@ -62,7 +63,7 @@ def main() -> int:
     parser.add_argument("--model-dir", type=Path, default=MODEL_DIR)
     parser.add_argument("--out", type=Path, default=OUT)
     parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--compare-fp32", action="store_true")
+    parser.add_argument("--compare-int8", action="store_true")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 
@@ -76,11 +77,11 @@ def main() -> int:
         raise SystemExit(f"{args.annotations} yielded no usable pairs")
     logger.info("scoring %d pairs", len(rows))
 
-    int8_predictions = predict(OnnxStanceClassifier(args.model_dir), rows)
-    result = score(judgements(rows, int8_predictions), "fever_dev")
+    served_predictions = predict(OnnxStanceClassifier(args.model_dir), rows)
+    result = score(judgements(rows, served_predictions), "fever_dev")
     result["rows"] = len(rows)
     result["retrieved_evidence_rows"] = sum(1 for r in rows if r["retrieved_evidence"])
-    result["quantised"] = True
+    result["quantised"] = False
     result["caveat"] = (
         "FEVER's NOT ENOUGH INFO claims have no gold evidence by construction, so those "
         "rows carry retrieved evidence. The neutral class is therefore measured against "
@@ -90,14 +91,14 @@ def main() -> int:
         "slice needs hand annotated stance labels, so this number does not stand alone."
     )
 
-    if args.compare_fp32:
-        full = score(
-            judgements(rows, predict(OnnxStanceClassifier(args.model_dir, quantised=False), rows)),
-            "fever_dev_fp32",
+    if args.compare_int8:
+        other = score(
+            judgements(rows, predict(OnnxStanceClassifier(args.model_dir, quantised=True), rows)),
+            "fever_dev_int8",
         )
-        result["fp32"] = full
-        full_f1 = full["macro_f1"]
-        int8_f1 = result["macro_f1"]
+        result["int8"] = other
+        full_f1 = result["macro_f1"]
+        int8_f1 = other["macro_f1"]
         if isinstance(full_f1, float) and isinstance(int8_f1, float):
             # Signed: a positive value is accuracy fp32 has and int8 does not,
             # which is the direction EVALUATION.md's "delta" means.
@@ -112,7 +113,7 @@ def main() -> int:
     predictions_path.write_text(
         "\n".join(
             json.dumps({"id": r["id"], "gold": r["gold"], "predicted": p})
-            for r, p in zip(rows, int8_predictions, strict=True)
+            for r, p in zip(rows, served_predictions, strict=True)
         )
         + "\n",
         encoding="utf-8",
@@ -121,7 +122,7 @@ def main() -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     sys.stdout.write(
-        json.dumps({k: v for k, v in result.items() if k not in {"confusion", "fp32"}}, indent=2)
+        json.dumps({k: v for k, v in result.items() if k not in {"confusion", "int8"}}, indent=2)
         + "\n"
     )
     return 0
