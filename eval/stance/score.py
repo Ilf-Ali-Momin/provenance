@@ -55,6 +55,11 @@ CLASSES: Final = (SUPPORT, REFUTE, NEUTRAL)
 # EVALUATION.md names these four and requires each as its own number.
 STRESS_SUBSETS: Final = ("attributed", "partial_overlap", "temporal_mismatch", "numeric")
 MACRO_F1_FLOOR: Final = 0.60
+# EVALUATION.md sets the threshold on one slice: "macro F1 above 0.60 on the OOD
+# slice". FEVER and MultiFC are reported, not gated - a classifier can clear 0.60
+# on curated NLI pairs and be useless on news text, which is the entire reason
+# the three slices are reported together.
+ACCEPTANCE_SLICE: Final = "ood"
 
 
 class Judgement(NamedTuple):
@@ -120,6 +125,11 @@ def score(judgements: list[Judgement], slice_name: str = "unnamed") -> dict[str,
 
     confusion: Counter[tuple[str, str]] = Counter((j.gold, j.predicted) for j in judgements)
     overall = macro_f1(judgements)
+    # Acceptance is a property of the OOD slice and of nothing else. Computing it
+    # for every slice put `meets_acceptance: true` on the FEVER result, where it
+    # reads as the component having passed its gate while the gate is about a
+    # different distribution entirely.
+    is_acceptance_slice = slice_name == ACCEPTANCE_SLICE
     return {
         "slice": slice_name,
         "pairs": len(judgements),
@@ -131,10 +141,19 @@ def score(judgements: list[Judgement], slice_name: str = "unnamed") -> dict[str,
         # subset, and EVALUATION.md says the attributed result is expected to be
         # poor and must be reported anyway.
         "subsets": subsets,
-        "meets_acceptance": bool(judgements) and overall > MACRO_F1_FLOOR,
+        "meets_acceptance": (
+            (bool(judgements) and overall > MACRO_F1_FLOOR) if is_acceptance_slice else None
+        ),
         "acceptance": (
             f"EVALUATION.md §3: macro F1 above {MACRO_F1_FLOOR} on the OOD slice; "
-            "the attributed subset is reported separately and is not required to pass"
+            "the attributed subset is reported separately and is not required to pass. "
+            + (
+                "This is that slice."
+                if is_acceptance_slice
+                else f"This is the {slice_name!r} slice, which is reported and not gated: "
+                "a classifier can clear the floor on curated NLI pairs and be useless on "
+                "news text, so meets_acceptance is null here rather than true."
+            )
         ),
     }
 

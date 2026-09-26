@@ -76,9 +76,8 @@ def main() -> int:
         raise SystemExit(f"{args.annotations} yielded no usable pairs")
     logger.info("scoring %d pairs", len(rows))
 
-    result = score(
-        judgements(rows, predict(OnnxStanceClassifier(args.model_dir), rows)), "fever_dev"
-    )
+    int8_predictions = predict(OnnxStanceClassifier(args.model_dir), rows)
+    result = score(judgements(rows, int8_predictions), "fever_dev")
     result["rows"] = len(rows)
     result["retrieved_evidence_rows"] = sum(1 for r in rows if r["retrieved_evidence"])
     result["quantised"] = True
@@ -103,6 +102,21 @@ def main() -> int:
             # Signed: a positive value is accuracy fp32 has and int8 does not,
             # which is the direction EVALUATION.md's "delta" means.
             result["quantisation_macro_f1_delta"] = round(full_f1 - int8_f1, 4)
+
+    # Predictions are stored so a scoring change never needs a nine hour re-run.
+    # This run's `meets_acceptance` had to be recomputed from the confusion
+    # matrix instead, which worked only because that matrix happens to determine
+    # every per class figure; a fix touching the subsets would not have been
+    # recoverable.
+    predictions_path = args.out.with_suffix(".predictions.jsonl")
+    predictions_path.write_text(
+        "\n".join(
+            json.dumps({"id": r["id"], "gold": r["gold"], "predicted": p})
+            for r, p in zip(rows, int8_predictions, strict=True)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

@@ -70,7 +70,28 @@ def test_acceptance_ignores_the_subsets_including_the_failing_one() -> None:
 
 
 def test_acceptance_needs_macro_f1_strictly_above_the_floor() -> None:
-    assert score([])["meets_acceptance"] is False
+    assert score([], "ood")["meets_acceptance"] is False
+
+
+def test_only_the_ood_slice_is_gated() -> None:
+    """EVALUATION.md sets the threshold on the OOD slice and nothing else.
+
+    Computing it everywhere put `meets_acceptance: true` on the FEVER result,
+    where it reads as the component having passed its gate while the gate is
+    about a different distribution. A classifier can clear 0.60 on curated NLI
+    pairs and be useless on news text, which is why the three slices are
+    reported together in the first place.
+    """
+    perfect = [_j("support", "support"), _j("refute", "refute"), _j("neutral", "neutral")] * 5
+    assert score(perfect, "fever_dev")["meets_acceptance"] is None
+    assert score(perfect, "multifc")["meets_acceptance"] is None
+    assert score(perfect, "ood")["meets_acceptance"] is True
+
+
+def test_a_non_gated_slice_says_why_it_is_not_gated() -> None:
+    text = str(score([_j("support", "support")], "fever_dev")["acceptance"])
+    assert "reported and not gated" in text
+    assert "null here rather than true" in text
 
 
 def test_the_confusion_matrix_records_the_direction_of_the_error() -> None:

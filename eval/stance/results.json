@@ -1,59 +1,60 @@
 {
   "slice": "fever_dev",
-  "pairs": 200,
-  "macro_f1": 0.7872,
+  "pairs": 15873,
+  "macro_f1": 0.7736,
   "per_class": {
     "support": {
-      "precision": 0.8281,
-      "recall": 0.8154,
-      "f1": 0.8217,
-      "support": 65
+      "precision": 0.7893,
+      "recall": 0.82,
+      "f1": 0.8044,
+      "support": 4638
     },
     "refute": {
-      "precision": 0.8909,
-      "recall": 0.7206,
-      "f1": 0.7967,
-      "support": 68
+      "precision": 0.865,
+      "recall": 0.6816,
+      "f1": 0.7624,
+      "support": 4887
     },
     "neutral": {
-      "precision": 0.679,
-      "recall": 0.8209,
-      "f1": 0.7432,
-      "support": 67
+      "precision": 0.7093,
+      "recall": 0.805,
+      "f1": 0.7541,
+      "support": 6348
     }
   },
   "confusion": {
-    "neutral->neutral": 55,
-    "neutral->refute": 6,
-    "neutral->support": 6,
-    "refute->neutral": 14,
-    "refute->refute": 49,
-    "refute->support": 5,
-    "support->neutral": 12,
-    "support->support": 53
+    "neutral->neutral": 5110,
+    "neutral->refute": 477,
+    "neutral->support": 761,
+    "refute->neutral": 1302,
+    "refute->refute": 3331,
+    "refute->support": 254,
+    "support->neutral": 792,
+    "support->refute": 43,
+    "support->support": 3803
   },
   "subsets": {
     "attributed": {
-      "pairs": 1,
-      "macro_f1": 0.3333,
+      "pairs": 110,
+      "macro_f1": 0.8335,
       "per_class": {
         "support": {
-          "precision": 0.0,
-          "recall": 0.0,
-          "f1": 0.0,
-          "support": 0
+          "precision": 0.7692,
+          "recall": 0.8696,
+          "f1": 0.8163,
+          "support": 23
         },
         "refute": {
-          "precision": 0.0,
-          "recall": 0.0,
-          "f1": 0.0,
-          "support": 0
+          "precision": 0.8182,
+          "recall": 0.8182,
+          "f1": 0.8182,
+          "support": 22
         },
         "neutral": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1": 1.0,
-          "support": 1
+          "precision": 0.8871,
+          "recall": 0.8462,
+          "f1": 0.8661,
+          "support": 65
         }
       }
     },
@@ -73,10 +74,90 @@
       "per_class": null
     }
   },
-  "meets_acceptance": true,
-  "acceptance": "EVALUATION.md \u00a73: macro F1 above 0.6 on the OOD slice; the attributed subset is reported separately and is not required to pass",
-  "rows": 200,
-  "retrieved_evidence_rows": 67,
+  "meets_acceptance": null,
+  "acceptance": "EVALUATION.md \u00a73: macro F1 above 0.6 on the OOD slice; the attributed subset is reported separately and is not required to pass. This is the 'fever_dev' slice, which is reported and not gated: a classifier can clear the floor on curated NLI pairs and be useless on news text, so meets_acceptance is null here rather than true.",
+  "rows": 15873,
+  "retrieved_evidence_rows": 6348,
   "quantised": true,
-  "caveat": "FEVER's NOT ENOUGH INFO claims have no gold evidence by construction, so those rows carry retrieved evidence. The neutral class is therefore measured against passages a retriever thought relevant and nobody confirmed were, which is not the same measurement as the other two classes. This is one of the three slices EVALUATION.md requires reported together; MultiFC is not built (D051) and the OOD slice needs hand annotated stance labels, so this number does not stand alone."
+  "caveat": "FEVER's NOT ENOUGH INFO claims have no gold evidence by construction, so those rows carry retrieved evidence. The neutral class is therefore measured against passages a retriever thought relevant and nobody confirmed were, which is not the same measurement as the other two classes. This is one of the three slices EVALUATION.md requires reported together; MultiFC is not built (D051) and the OOD slice needs hand annotated stance labels, so this number does not stand alone.",
+  "fp32": {
+    "slice": "fever_dev_fp32",
+    "pairs": 15873,
+    "macro_f1": 0.8319,
+    "per_class": {
+      "support": {
+        "precision": 0.8744,
+        "recall": 0.8404,
+        "f1": 0.8571,
+        "support": 4638
+      },
+      "refute": {
+        "precision": 0.8656,
+        "recall": 0.8064,
+        "f1": 0.835,
+        "support": 4887
+      },
+      "neutral": {
+        "precision": 0.7734,
+        "recall": 0.836,
+        "f1": 0.8035,
+        "support": 6348
+      }
+    },
+    "confusion": {
+      "neutral->neutral": 5307,
+      "neutral->refute": 559,
+      "neutral->support": 482,
+      "refute->neutral": 868,
+      "refute->refute": 3941,
+      "refute->support": 78,
+      "support->neutral": 687,
+      "support->refute": 53,
+      "support->support": 3898
+    },
+    "subsets": {
+      "attributed": {
+        "pairs": 110,
+        "macro_f1": 0.9037,
+        "per_class": {
+          "support": {
+            "precision": 0.88,
+            "recall": 0.9565,
+            "f1": 0.9167,
+            "support": 23
+          },
+          "refute": {
+            "precision": 0.8077,
+            "recall": 0.9545,
+            "f1": 0.875,
+            "support": 22
+          },
+          "neutral": {
+            "precision": 0.9661,
+            "recall": 0.8769,
+            "f1": 0.9194,
+            "support": 65
+          }
+        }
+      },
+      "partial_overlap": {
+        "pairs": 0,
+        "macro_f1": null,
+        "per_class": null
+      },
+      "temporal_mismatch": {
+        "pairs": 0,
+        "macro_f1": null,
+        "per_class": null
+      },
+      "numeric": {
+        "pairs": 0,
+        "macro_f1": null,
+        "per_class": null
+      }
+    },
+    "meets_acceptance": null,
+    "acceptance": "EVALUATION.md \u00a73: macro F1 above 0.6 on the OOD slice; the attributed subset is reported separately and is not required to pass. This is the 'fever_dev_fp32' slice, which is reported and not gated: a classifier can clear the floor on curated NLI pairs and be useless on news text, so meets_acceptance is null here rather than true."
+  },
+  "quantisation_macro_f1_delta": 0.0583
 }
