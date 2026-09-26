@@ -132,11 +132,24 @@ def handler_for(path: Path) -> type[BaseHTTPRequestHandler]:
                         target["spans"] = validate(row, str(target["text"]))
                         target["notes"] = str(row.get("notes") or "")
                         target["reviewed"] = bool(row.get("reviewed"))
+                        # Who marked it. Recorded because a set several people
+                        # annotated is a different measurement from one person's:
+                        # inter-annotator agreement is computable only if the
+                        # spans carry an annotator, and disagreement between two
+                        # people is a result about the guideline rather than
+                        # noise to average away.
+                        annotator = str(row.get("annotator") or "").strip()[:60]
+                        if annotator:
+                            target["annotator"] = annotator
                 except (ValueError, KeyError, TypeError) as exc:
                     self._send(400, str(exc).encode(), "text/plain")
                     return
                 write(path, rows)
                 done = sum(1 for r in rows if r.get("reviewed"))
+            # The count goes back on every save so a second browser sees the
+            # first one's progress without a reload. Two people on the same
+            # passage still race, and the last save wins; the annotator field
+            # records who that was.
             self._send(200, json.dumps({"reviewed": done}).encode(), "application/json")
 
         def log_message(self, fmt: str, *args: Any) -> None:
@@ -150,6 +163,18 @@ def main() -> int:
     parser.add_argument("--annotations", type=Path, default=ANNOTATIONS)
     parser.add_argument("--port", type=int, default=8777)
     parser.add_argument("--no-open", action="store_true")
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help=(
+            "interface to bind. The default is loopback, which is correct for a tool "
+            "that writes to the working tree and has no authentication. Pass 0.0.0.0 "
+            "only behind a tunnel you control, and only knowing that the passages are "
+            "publisher copyright and marked redistribution: prohibited in "
+            "data/MANIFEST.yaml -- sharing the link is a distribution decision, and "
+            "it is yours to make rather than this tool's to make quietly."
+        ),
+    )
     args = parser.parse_args()
 
     if not args.annotations.exists():
@@ -165,7 +190,14 @@ def main() -> int:
     )
     if not args.no_open:
         webbrowser.open(url)
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(args.annotations))
+    if args.host != "127.0.0.1":
+        sys.stdout.write(
+            f"\nbinding {args.host}, not loopback. This server has no authentication and "
+            "writes to the working tree, and the passages it serves are publisher "
+            "copyright (data/MANIFEST.yaml: redistribution: prohibited). Put it behind a "
+            "tunnel you control and share the link only with people you mean to.\n\n"
+        )
+    server = ThreadingHTTPServer((args.host, args.port), handler_for(args.annotations))
     try:
         server.serve_forever()
     except KeyboardInterrupt:

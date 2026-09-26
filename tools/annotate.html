@@ -17,6 +17,8 @@
   #fill { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
   #count { font-variant-numeric: tabular-nums; color: var(--dim); font-size: 13px; }
   #saved { font-size: 12px; color: var(--dim); min-width: 90px; text-align: right; }
+  #who { font: inherit; font-size: 12px; width: 110px; padding: 4px 7px;
+         border: 1px solid var(--rule); border-radius: 4px; background: var(--card); }
   main { max-width: 820px; margin: 0 auto; padding: 24px 20px 120px; }
   .meta { font-size: 12px; color: var(--dim); margin-bottom: 10px;
           display: flex; gap: 14px; flex-wrap: wrap; }
@@ -51,6 +53,7 @@
   <strong>Annotation</strong>
   <div id="bar"><div id="fill"></div></div>
   <span id="count"></span>
+  <input id="who" placeholder="your name" maxlength="60" autocomplete="off">
   <span id="saved"></span>
 </header>
 
@@ -79,6 +82,7 @@ let rows = [], i = 0, dirty = new Set();
 const $ = id => document.getElementById(id);
 
 async function boot() {
+  try { $("who").value = localStorage.getItem("annotator") || ""; } catch (e) { /* ignore */ }
   rows = await (await fetch("passages")).json();
   i = rows.findIndex(r => !r.reviewed);
   if (i < 0) i = 0;
@@ -187,7 +191,15 @@ function save() {
       body: JSON.stringify(payload),
     });
     $("saved").textContent = res.ok ? "saved" : "SAVE FAILED";
-    if (res.ok) dirty.clear();
+    if (res.ok) {
+      dirty.clear();
+      // Someone else may have marked passages since this page loaded.
+      const body = await res.json().catch(() => null);
+      if (body && typeof body.reviewed === "number") {
+        $("count").textContent = `${body.reviewed}/${rows.length} reviewed`;
+        $("fill").style.width = (100 * body.reviewed / rows.length) + "%";
+      }
+    }
   }, 400);
 }
 
