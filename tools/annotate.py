@@ -26,6 +26,7 @@ import sys
 import tempfile
 import threading
 import webbrowser
+from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from itertools import pairwise
 from pathlib import Path
@@ -37,6 +38,9 @@ TYPES: Final = frozenset({"factual_assertion", "opinion", "prediction", "attribu
 MAX_BODY: Final = 8 * 1024 * 1024
 
 _lock = threading.Lock()
+# Client addresses seen this run, so the startup banner can say how many devices
+# have loaded the page. In memory only: nothing about a visitor is written down.
+_seen: set[str] = set()
 
 
 def load(path: Path) -> list[dict[str, Any]]:
@@ -153,7 +157,26 @@ def handler_for(path: Path) -> type[BaseHTTPRequestHandler]:
             self._send(200, json.dumps({"reviewed": done}).encode(), "application/json")
 
         def log_message(self, fmt: str, *args: Any) -> None:
-            return
+            """One line per device that loads the page, and nothing else.
+
+            The default handler logs every request, which buries the one fact
+            worth knowing - whether anybody reached the server at all - under a
+            save line per span. Without this, "nobody opened the link" and
+            "people opened it and marked nothing" look identical from outside,
+            and the difference decides whether to debug the firewall or wait.
+
+            Addresses are counted, not listed: which of your friends is on which
+            IP is not something this tool needs to record about them.
+            """
+            if self.path.split("?")[0] not in {"/", "/index.html"}:
+                return
+            client = self.client_address[0]
+            first = client not in _seen
+            _seen.add(client)
+            when = datetime.now(UTC).strftime("%H:%M:%S")
+            label = "new device" if first else "returning"
+            sys.stdout.write(f"{when}  page loaded, {label}, {len(_seen)} device(s) so far\n")
+            sys.stdout.flush()
 
     return Handler
 
