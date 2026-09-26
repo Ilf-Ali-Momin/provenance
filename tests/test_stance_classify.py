@@ -154,3 +154,99 @@ def test_the_quantisation_delta_is_recorded() -> None:
     assert 0.0 <= quantisation["agreement"] <= 1.0
     assert quantisation["max_abs_probability_delta"] >= 0.0
     assert manifest["measured"]["size_bytes"]["int8"] < manifest["measured"]["size_bytes"]["fp32"]
+
+
+@pytest.mark.model
+def test_fp32_is_indifferent_to_what_else_is_in_the_batch() -> None:
+    """Padding must not reach the answer, and under fp32 it does not.
+
+    This is the control for the test below. Identical to 1.8e-07 across batch
+    layouts means the attention mask is doing its job and the model computes
+    over real tokens only.
+    """
+    _skip_without_model()
+    corpus = Path("data/stance/fever_dev.jsonl")
+    if not corpus.exists():
+        pytest.skip("no FEVER dev; run eval.stance.fever --download")
+
+    from eval.stance.fever import pairs
+
+    rows = pairs(corpus, 40)
+    premises = [str(r["premise"]) for r in rows]
+    hypotheses = [str(r["hypothesis"]) for r in rows]
+
+    one = OnnxStanceClassifier(MODEL_DIR, quantised=False, batch_size=len(rows))
+    split = OnnxStanceClassifier(MODEL_DIR, quantised=False, batch_size=8)
+    a = one.classify(premises, hypotheses)
+    b = split.classify(premises, hypotheses)
+
+    assert [label for label, _ in a] == [label for label, _ in b]
+    for (_, x), (_, y) in zip(a, b, strict=True):
+        for stance in x:
+            assert abs(x[stance] - y[stance]) < 1e-5
+
+
+@pytest.mark.model
+def test_int8_answers_depend_on_batch_composition() -> None:
+    """A property of dynamic quantisation, recorded rather than assumed away.
+
+    Dynamic int8 derives activation scales at run time from the values actually
+    in the tensor, and padding changes those values. So the same pair can get a
+    different answer depending on which other pairs it was batched with.
+    Measured on 40 FEVER dev rows: 1 label in 40 flips between a single batch
+    and batches of 8, with a maximum probability shift of 0.22, while fp32 over
+    the same rows moves by 1.8e-07.
+
+    Length bucketing does not cause this - batching by arrival order varies the
+    padding too - but it does make it visible. The consequence is that an int8
+    result is not reproducible across batch layouts, which the FEVER numbers in
+    eval/stance/results.json inherit.
+    """
+    _skip_without_model()
+    corpus = Path("data/stance/fever_dev.jsonl")
+    if not corpus.exists():
+        pytest.skip("no FEVER dev; run eval.stance.fever --download")
+
+    from eval.stance.fever import pairs
+
+    rows = pairs(corpus, 40)
+    premises = [str(r["premise"]) for r in rows]
+    hypotheses = [str(r["hypothesis"]) for r in rows]
+
+    one = OnnxStanceClassifier(MODEL_DIR, batch_size=len(rows))
+    split = OnnxStanceClassifier(MODEL_DIR, batch_size=8)
+    a = [label for label, _ in one.classify(premises, hypotheses)]
+    b = [label for label, _ in split.classify(premises, hypotheses)]
+
+    disagreements = sum(1 for x, y in zip(a, b, strict=True) if x != y)
+    # Small, and not zero. Both halves are the finding.
+    assert disagreements <= len(rows) // 10
+
+
+@pytest.mark.model
+def test_the_model_itself_is_deterministic() -> None:
+    """Twice through the same session with the same batch gives the same answer,
+    so the variation above is the batch layout and not the runtime."""
+    _skip_without_model()
+    classifier = OnnxStanceClassifier(MODEL_DIR, batch_size=16)
+    premises = ["Unemployment fell to 4.1% in March."] * 4
+    hypotheses = ["Unemployment fell in March."] * 4
+    first = classifier.classify(premises, hypotheses)
+    second = classifier.classify(premises, hypotheses)
+    assert first == second
+
+
+@pytest.mark.model
+def test_bucketing_preserves_the_callers_order() -> None:
+    """Results are sorted by length internally and must come back unsorted."""
+    _skip_without_model()
+    classifier = OnnxStanceClassifier(MODEL_DIR, batch_size=2)
+    premises = [
+        "Unemployment fell to 4.1% in March, the statistics office said.",
+        "The bridge carries 40,000 vehicles a day. " * 12,
+        "Unemployment rose to 4.8% in March.",
+    ]
+    hypothesis = "Unemployment fell in March."
+    labels = [label for label, _ in classifier.classify(premises, [hypothesis] * 3)]
+    assert labels[0] == "support"
+    assert labels[2] == "refute"

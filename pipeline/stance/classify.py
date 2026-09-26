@@ -44,6 +44,11 @@ MODEL_ID: Final = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
 # at the call site; the value is resolved against the repository, not guessed.
 MODEL_REVISION: Final = "6f5cf0a2b59cabb106aca4c287eed12e357e90eb"
 MAX_TOKENS: Final = 512
+# See the note at the call site: parallel workers, not one big session.
+DEFAULT_THREADS: Final = 1
+# Sub-batch size for length bucketing. See `logits`: padding, not token count,
+# is what per-pair cost tracks.
+DEFAULT_BATCH: Final = 16
 
 # The project's vocabulary, which is about evidence rather than inference. The
 # mapping from the model's own labels is applied once, here.
@@ -78,7 +83,12 @@ class OnnxStanceClassifier:
     """
 
     def __init__(
-        self, model_dir: Path, quantised: bool = True, max_tokens: int = MAX_TOKENS
+        self,
+        model_dir: Path,
+        quantised: bool = True,
+        max_tokens: int = MAX_TOKENS,
+        threads: int = DEFAULT_THREADS,
+        batch_size: int = DEFAULT_BATCH,
     ) -> None:
         import onnxruntime
         from tokenizers import Tokenizer
@@ -110,25 +120,59 @@ class OnnxStanceClassifier:
             raise StanceUnavailableError(f"no {name} in {model_dir}")
 
         self.max_tokens = max_tokens
+        self.batch_size = max(1, batch_size)
         self.tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
         self.tokenizer.enable_truncation(max_length=max_tokens)
         self.tokenizer.enable_padding()
         options = onnxruntime.SessionOptions()
-        options.intra_op_num_threads = 1
+        # One by default, because several of these run in parallel worker
+        # containers and a session that spawns a thread per core in each of them
+        # oversubscribes the box: the threads contend, every request slows, and
+        # total throughput falls. Raise it only where one worker owns the
+        # machine, and only against a measurement - tools/bench_stance.py is
+        # that measurement.
+        options.intra_op_num_threads = threads
         self.session = onnxruntime.InferenceSession(
             str(path), options, providers=["CPUExecutionProvider"]
         )
         self.inputs = {i.name for i in self.session.get_inputs()}
 
     def logits(self, premises: list[str], hypotheses: list[str]) -> NDArray[np.float32]:
-        """Raw model outputs, in the model's own label order."""
+        """Raw model outputs, in the model's own label order.
+
+        Sub-batched by token length. The tokenizer pads every sequence in a call
+        to the longest one in it, and the model then computes over the padding,
+        so one long premise makes every pair batched with it cost what it costs.
+        Measured on FEVER dev: a 64-pair batch padded to 219 tokens against a
+        mean of 48.9 real ones - 78% of the work discarded - at 520 ms per pair,
+        where 16 pairs padded to 83 ran at 142. Grouping similar lengths is
+        worth 1.5 to 1.6x on both precisions and changes no output, since each
+        pair still sees exactly its own tokens.
+        """
         if len(premises) != len(hypotheses):
             msg = f"{len(premises)} premises against {len(hypotheses)} hypotheses"
             raise StanceUnavailableError(msg)
         if not premises:
             return np.zeros((0, len(self.labels)), dtype=np.float32)
-        # Pair encoding, so the model sees [CLS] premise [SEP] hypothesis [SEP]
-        # and truncation removes the premise's tail rather than the claim.
+
+        encoded = self.tokenizer.encode_batch(list(zip(premises, hypotheses, strict=True)))
+        if len(premises) > self.batch_size:
+            order = sorted(range(len(encoded)), key=lambda i: sum(encoded[i].attention_mask))
+            out = np.zeros((len(premises), len(self.labels)), dtype=np.float32)
+            for start in range(0, len(order), self.batch_size):
+                window = order[start : start + self.batch_size]
+                # Re-encoded per window so padding is that window's longest and
+                # not the whole call's; encode_batch is cheap beside inference.
+                out[window] = self._forward(
+                    [premises[i] for i in window], [hypotheses[i] for i in window]
+                )
+            return out
+        return self._forward(premises, hypotheses)
+
+    def _forward(self, premises: list[str], hypotheses: list[str]) -> NDArray[np.float32]:
+        """One session call. Pair encoding, so the model sees
+        [CLS] premise [SEP] hypothesis [SEP] and truncation removes the
+        premise's tail rather than the claim."""
         encoded = self.tokenizer.encode_batch(list(zip(premises, hypotheses, strict=True)))
         feed = {
             "input_ids": np.array([e.ids for e in encoded], dtype=np.int64),

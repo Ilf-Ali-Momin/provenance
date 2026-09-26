@@ -1,0 +1,157 @@
+{
+  "pairs_per_batch": 16,
+  "latency_by_threads": [
+    {
+      "config": "int8",
+      "threads": 1,
+      "pairs": 16,
+      "seconds": 1.905,
+      "ms_per_pair": 119.0,
+      "pairs_per_second": 8.401
+    },
+    {
+      "config": "int8",
+      "threads": 2,
+      "pairs": 16,
+      "seconds": 1.91,
+      "ms_per_pair": 119.4,
+      "pairs_per_second": 8.376
+    },
+    {
+      "config": "int8",
+      "threads": 4,
+      "pairs": 16,
+      "seconds": 1.893,
+      "ms_per_pair": 118.3,
+      "pairs_per_second": 8.451
+    },
+    {
+      "config": "int8",
+      "threads": 8,
+      "pairs": 16,
+      "seconds": 3.054,
+      "ms_per_pair": 190.9,
+      "pairs_per_second": 5.238
+    },
+    {
+      "config": "fp32",
+      "threads": 1,
+      "pairs": 16,
+      "seconds": 6.344,
+      "ms_per_pair": 396.5,
+      "pairs_per_second": 2.522
+    },
+    {
+      "config": "fp32",
+      "threads": 2,
+      "pairs": 16,
+      "seconds": 3.695,
+      "ms_per_pair": 230.9,
+      "pairs_per_second": 4.33
+    },
+    {
+      "config": "fp32",
+      "threads": 4,
+      "pairs": 16,
+      "seconds": 3.725,
+      "ms_per_pair": 232.8,
+      "pairs_per_second": 4.296
+    },
+    {
+      "config": "fp32",
+      "threads": 8,
+      "pairs": 16,
+      "seconds": 5.49,
+      "ms_per_pair": 343.1,
+      "pairs_per_second": 2.915
+    }
+  ],
+  "throughput_by_workers": [
+    {
+      "config": "int8",
+      "workers": 1,
+      "threads_each": 1,
+      "pairs_total": 16,
+      "wall_seconds": 4.807,
+      "slowest_batch_seconds": 2.218,
+      "pairs_per_second": 7.215,
+      "batch_spread_seconds": 0.0
+    },
+    {
+      "config": "int8",
+      "workers": 2,
+      "threads_each": 1,
+      "pairs_total": 32,
+      "wall_seconds": 6.894,
+      "slowest_batch_seconds": 3.981,
+      "pairs_per_second": 8.039,
+      "batch_spread_seconds": 0.128
+    },
+    {
+      "config": "int8",
+      "workers": 4,
+      "threads_each": 1,
+      "pairs_total": 64,
+      "wall_seconds": 13.035,
+      "slowest_batch_seconds": 6.195,
+      "pairs_per_second": 10.331,
+      "batch_spread_seconds": 0.201
+    },
+    {
+      "config": "int8",
+      "workers": 8,
+      "threads_each": 1,
+      "pairs_total": 128,
+      "wall_seconds": 28.786,
+      "slowest_batch_seconds": 12.638,
+      "pairs_per_second": 10.128,
+      "batch_spread_seconds": 1.231
+    },
+    {
+      "config": "fp32",
+      "workers": 1,
+      "threads_each": 1,
+      "pairs_total": 16,
+      "wall_seconds": 9.276,
+      "slowest_batch_seconds": 5.62,
+      "pairs_per_second": 2.847,
+      "batch_spread_seconds": 0.0
+    },
+    {
+      "config": "fp32",
+      "workers": 2,
+      "threads_each": 1,
+      "pairs_total": 32,
+      "wall_seconds": 13.777,
+      "slowest_batch_seconds": 9.379,
+      "pairs_per_second": 3.412,
+      "batch_spread_seconds": 0.0
+    },
+    {
+      "config": "fp32",
+      "workers": 4,
+      "threads_each": 1,
+      "pairs_total": 64,
+      "wall_seconds": 26.084,
+      "slowest_batch_seconds": 15.478,
+      "pairs_per_second": 4.135,
+      "batch_spread_seconds": 0.216
+    },
+    {
+      "config": "fp32",
+      "workers": 8,
+      "threads_each": 1,
+      "pairs_total": 128,
+      "wall_seconds": 59.107,
+      "slowest_batch_seconds": 34.046,
+      "pairs_per_second": 3.76,
+      "batch_spread_seconds": 1.173
+    }
+  ],
+  "peak_pairs_per_second": {
+    "int8": 10.331,
+    "fp32": 4.135
+  },
+  "reading": "latency_by_threads is what a waiting user feels; throughput_by_workers is what decides capacity, and the two do not trade off symmetrically because intra-op parallelism scales sublinearly. Machine dependent: a figure here describes the box it ran on and says nothing about another. The accuracy side of this trade is in D050 - int8 costs 0.0583 macro F1 and 12.5 points of refute recall.",
+  "fp32_throughput_ratio": 0.4
+}
