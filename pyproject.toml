@@ -192,6 +192,7 @@ module = [
   "pgvector.*",
   "reportlab.*",
   "pypdf.*",
+  "lxml.*",
 ]
 ignore_missing_imports = true
 
