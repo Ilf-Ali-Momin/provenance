@@ -1,5 +1,8 @@
 # ROADMAP
 
+**Current state is in `context/STATE.md`** — what is built, what is blocked and
+on whom, and where to start. This file is the plan; that one is the position.
+
 Sequenced so that every milestone produces something defensible on its own. If the project stops after any milestone, what exists is complete rather than half built.
 
 The ordering is deliberate and it is not the ordering that feels natural. Evaluation infrastructure comes before models. The security boundary comes before the feature that needs it. Both inversions exist because the alternative order produces work that has to be redone.
@@ -82,6 +85,8 @@ Stance evaluated on FEVER dev, MultiFC, and the OOD slice, with the four named s
 
 **Done when.** The three stance numbers are recorded together with per class breakdowns, and the attributed claims subset is reported honestly whatever it shows.
 
+**Status: substantially built, one of three stance numbers measured.** FEVER dev macro F1 0.8319 on the served fp32 configuration (D052). MultiFC is not built and will not be — its labels are veracity verdicts rather than stance toward evidence (D051), so the three-numbers-together requirement cannot be met as written. The OOD slice needs hand annotated stance labels. Retrieval has its metrics, sweep and pooling but no judged set, so nDCG and recall are unmeasured.
+
 **Defensible on its own as.** A working evidence retrieval system with a measured distribution shift analysis. This is the point at which the project is fully presentable.
 
 ---
@@ -99,6 +104,8 @@ Bluesky and Reddit samplers with in memory aggregation and no identifier persist
 Account age distribution, near duplicate ratio, time clustering.
 
 **Done when.** A domain lookup returns dated observations with sources, and the circulation sampler passes the no persistence test.
+
+**Status: started.** Registry and circulation schemas (D054), RDAP lookups verified against live servers (D055), about-page observations verified against a live publisher (D056). The no-persistence test passes. Remaining: the re-verification scheduler with change logging, and the Bluesky and Reddit samplers.
 
 ---
 
