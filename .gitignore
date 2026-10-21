@@ -57,3 +57,5 @@ eval/injection/*.partial.jsonl
 # manifest records the pinned revision, so the directory is reproducible and
 # does not belong in the tree.
 models/
+
+graphify-out/

@@ -4,11 +4,22 @@ Where the project actually is, for whoever picks it up next. Regenerate the
 numbers rather than trusting them: this file is written by hand and drifts, and
 `docs/m0-report.html` sections 9 and 10 are the generated ones.
 
-Last written 2026-09-29, at commit `2a24f16`. 84 commits, 770 tests passing,
-57 decisions in `context/DECISIONS.md`.
+Last written 2026-09-29, at commit `2a24f16`, reviewed 2026-10-21 at `d10ae61`.
+85 commits, 770 tests passing, 57 decisions in `context/DECISIONS.md`.
 
 Read `context/BRIEF.md` and `context/RULES.md` first. This file says where the
 work stopped, not what the project is.
+
+**Nine milestones, M0 to M8. Four are closed or part done and five have not
+started.** M0 and M1 are closed, M2 is parked, M3 has one of its three stance
+numbers, M4 is in progress, and M5 onwards is untouched. The project is a long
+way from finished; the working tree being clean means the last commit landed,
+not that the work did.
+
+`graphify-out/` is an untracked half-build of a knowledge graph over this repo.
+AST extraction completed (2,442 nodes, 6,394 edges from 169 Python files);
+semantic extraction over the 30 docs never ran. Delete the directory or finish
+it with `/graphify .` — nothing in the project depends on it.
 
 ## The three constraints that outrank everything
 
