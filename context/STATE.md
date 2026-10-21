@@ -4,8 +4,8 @@ Where the project actually is, for whoever picks it up next. Regenerate the
 numbers rather than trusting them: this file is written by hand and drifts, and
 `docs/m0-report.html` sections 9 and 10 are the generated ones.
 
-Last written 2026-09-29, at commit `2a24f16`, reviewed 2026-10-21 at `d10ae61`.
-85 commits, 770 tests passing, 57 decisions in `context/DECISIONS.md`.
+Last written 2026-10-21, at commit `3850efd`.
+86 commits, 788 tests passing, 58 decisions in `context/DECISIONS.md`.
 
 Read `context/BRIEF.md` and `context/RULES.md` first. This file says where the
 work stopped, not what the project is.
@@ -58,9 +58,9 @@ MultiFC is not built and will not be: its labels are veracity verdicts, not
 stance toward evidence (D051).
 
 **M4, source registry and circulation — started.** Registry and circulation
-schemas (D054), RDAP lookups (D055), about-page observations (D056). Remaining:
-the re-verification scheduler with change logging, and the Bluesky and Reddit
-samplers feeding `pipeline/circulation/aggregate.py`.
+schemas (D054), RDAP lookups (D055), about-page observations (D056),
+re-verification scheduler and change log (D057). Remaining: the Bluesky and
+Reddit samplers feeding `pipeline/circulation/aggregate.py`.
 
 **M5 onwards — not started.**
 
@@ -95,6 +95,11 @@ untested.
 - `mypy tests/` reports 66 errors; tests are not in mypy's `files` (D025).
 - Static or quantisation-aware int8 for the stance model would likely recover
   most of the 0.0583 macro F1 that dynamic int8 costs (D052). Unmeasured.
+- The re-verification cadences in `ReverificationSettings` are unmeasured, and
+  unlike the threshold below they are safe to guess: nothing downstream is
+  derived from them (D057).
+- The change log answers "did the link change", not "did the policy change" -
+  comparison is on an observation's value, not its evidence (D057).
 - The near-duplicate threshold in `CirculationSettings` is unswept and is the
   kind that is dangerous to guess (D054). Its known false positive — people
   quoting the same headline cluster — is asserted as a test.
@@ -104,12 +109,18 @@ untested.
 
 ## Where to start
 
-Finish M4. The re-verification scheduler is the next piece and needs nothing
-from anyone: it re-reads observations on a cadence and logs what changed, which
-is what makes the registry's append-only history worth having.
+Finish M4. The samplers are the remaining piece. Bluesky's public API needs no
+credentials; Reddit's does, so check what is available before designing around
+it. `pipeline/circulation/aggregate.py` is what they feed, and its
+`CirculationStats` is the only thing they may hand onwards - a sampler that
+returns `SampledPost` to a caller has broken the guarantee D054 makes with
+types.
 
-The samplers after that. Bluesky's public API needs no credentials; Reddit's
-does, so check what is available before designing around it.
+`pipeline/registry/schedule.py` is pure: it takes observations the caller has
+already produced and appends them. Nothing in the project runs it on a cadence
+yet - there is no job wiring it to the RQ queue, and the live check was a
+scratchpad script. That wiring is small and belongs with whatever first needs a
+registry that stays current.
 
 ## What this project keeps getting wrong
 
