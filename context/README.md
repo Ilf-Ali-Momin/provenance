@@ -4,7 +4,9 @@ Working name. Rename freely. "Provenance" describes what the system actually doe
 
 ## What these files are
 
-This is the context pack for an AI first build workflow. Every file here is written to be read by a coding agent at the start of a session, not by a human at the end of the project. The agent reads BRIEF, RULES, and ARCHITECTURE on every session start. It reads the others when the task touches them.
+The design documents for the project, written before the code they describe and kept in step with it. They are working documents rather than a tidy final writeup: BRIEF, RULES and ARCHITECTURE set the shape of the whole thing, and the rest are read when a task touches them.
+
+The decision log these files refer to is kept on local storage and is not published here, so a reference to a decision number in a docstring or a document will not resolve in this repository.
 
 ## Read order
 
@@ -17,7 +19,6 @@ This is the context pack for an AI first build workflow. Every file here is writ
 | EVALUATION.md | Any model or metric task | Eval protocol, OOD suite, acceptance thresholds |
 | SECURITY.md | Any task touching network, input, storage, or models | Threat model and required controls |
 | API.md | Any endpoint or client task | Contracts, error shapes, versioning |
-| DECISIONS.md | When a choice is being reversed or questioned | Decision log with reasoning and status |
 | ROADMAP.md | Session planning | Milestones and definitions of done |
 
 ## Non negotiables
@@ -28,14 +29,3 @@ Three rules override everything else in this pack. They exist because breaking a
 2. **Evaluation is written before the model.** The out of distribution suite in EVALUATION.md exists before the first training run. A number produced without a matching OOD number is not reportable.
 3. **Every fetched byte is hostile.** Article text, social posts, and model checkpoints are all attacker controlled inputs. SECURITY.md governs how they are handled and there are no convenience exceptions.
 
-## Session start prompt
-
-Paste this at the top of a fresh agent session.
-
-```
-Read context/BRIEF.md, context/RULES.md, and context/ARCHITECTURE.md in full.
-Then read the context file matching today's task per the table in context/README.md.
-Confirm you have read them by stating the current milestone from ROADMAP.md
-and the three non negotiables from README.md.
-Do not write code until I give you a task.
-```

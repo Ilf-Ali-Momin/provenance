@@ -59,3 +59,15 @@ eval/injection/*.partial.jsonl
 models/
 
 graphify-out/
+
+# Local only, never pushed.
+#
+# The annotation set carries verbatim passages from the OOD corpus, which
+# data/MANIFEST.yaml records as publisher copyright with redistribution
+# prohibited. The file lives on this machine and nowhere else.
+eval/annotation/passages.jsonl
+
+# Working notes kept outside the published repository.
+context/DECISIONS.md
+tools/refresh_report.py
+tests/test_refresh_report.py
