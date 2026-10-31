@@ -85,11 +85,14 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e "." --group dev
-      # The project installs itself as an editable package, and pip-audit tries
-      # to look it up on PyPI, where it does not exist. Skipping editable
-      # installs skips only our own package; every real dependency is still
-      # audited under --strict.
-      - run: pip-audit --strict --skip-editable --progress-spinner off
+      # Audit the dependency list rather than the environment. The project
+      # installs itself as an editable package, which pip-audit tries to look
+      # up on PyPI, where it does not exist; --skip-editable is no answer
+      # because --strict counts a skipped distribution as a failure of its own.
+      # Freezing without editables leaves exactly the third-party packages,
+      # every one of which is still audited under --strict.
+      - run: pip freeze --exclude-editable > /tmp/audit-requirements.txt
+      - run: pip-audit --strict -r /tmp/audit-requirements.txt --progress-spinner off
 
   secrets:
     name: gitleaks
