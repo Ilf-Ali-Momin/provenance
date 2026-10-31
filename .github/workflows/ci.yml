@@ -85,7 +85,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e "." --group dev
-      - run: pip-audit --strict --progress-spinner off
+      # The project installs itself as an editable package, and pip-audit tries
+      # to look it up on PyPI, where it does not exist. Skipping editable
+      # installs skips only our own package; every real dependency is still
+      # audited under --strict.
+      - run: pip-audit --strict --skip-editable --progress-spinner off
 
   secrets:
     name: gitleaks
