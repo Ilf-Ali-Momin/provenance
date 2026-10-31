@@ -105,7 +105,7 @@ Account age distribution, near duplicate ratio, time clustering.
 
 **Done when.** A domain lookup returns dated observations with sources, and the circulation sampler passes the no persistence test.
 
-**Status: started.** Registry and circulation schemas (D054), RDAP lookups verified against live servers (D055), about-page observations verified against a live publisher (D056), re-verification scheduler and change log verified on a live two-pass run (D057). The no-persistence test passes. Remaining: the Bluesky and Reddit samplers.
+**Status: started.** Registry and circulation schemas (D054), RDAP lookups verified against live servers (D055), about-page observations verified against a live publisher (D056), re-verification scheduler and change log verified on a live two-pass run (D057), Bluesky sampler verified against the live AppView (D058). The no-persistence test passes. Remaining: the Reddit sampler. Note that an unauthenticated Bluesky sample is capped at 100 posts by the API itself, which limits what the circulation measures can claim.
 
 ---
 

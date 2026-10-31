@@ -208,13 +208,14 @@ addopts = [
   "--strict-markers",
   "--strict-config",
   # Model behaviour tests are slow and gate releases, not commits (RULES.md).
-  "-m", "not model and not integration",
+  "-m", "not model and not integration and not network",
 ]
 markers = [
   "adversarial: hostile-input suites from SECURITY.md. First class, gates releases.",
   "model: loads a checkpoint or calls a model service. Slow. Excluded by default.",
   "contract: endpoint behaviour against the schemas in context/API.md.",
   "integration: needs the docker compose stack up. Excluded by default; never runs in CI.",
+  "network: calls a live third-party API. Excluded by default; a failure here can mean\n    the upstream changed rather than this code breaking, so it must not gate a commit.",
 ]
 xfail_strict = true
 filterwarnings = ["error"]

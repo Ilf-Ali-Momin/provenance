@@ -5,7 +5,7 @@ numbers rather than trusting them: this file is written by hand and drifts, and
 `docs/m0-report.html` sections 9 and 10 are the generated ones.
 
 Last written 2026-10-21, at commit `3850efd`.
-86 commits, 788 tests passing, 58 decisions in `context/DECISIONS.md`.
+90 commits, 816 tests passing, 59 decisions in `context/DECISIONS.md`.
 
 Read `context/BRIEF.md` and `context/RULES.md` first. This file says where the
 work stopped, not what the project is.
@@ -59,8 +59,8 @@ stance toward evidence (D051).
 
 **M4, source registry and circulation — started.** Registry and circulation
 schemas (D054), RDAP lookups (D055), about-page observations (D056),
-re-verification scheduler and change log (D057). Remaining: the Bluesky and
-Reddit samplers feeding `pipeline/circulation/aggregate.py`.
+re-verification scheduler and change log (D057), the Bluesky sampler (D058).
+Remaining: the Reddit sampler feeding `pipeline/circulation/aggregate.py`.
 
 **M5 onwards — not started.**
 
@@ -109,12 +109,20 @@ untested.
 
 ## Where to start
 
-Finish M4. The samplers are the remaining piece. Bluesky's public API needs no
-credentials; Reddit's does, so check what is available before designing around
-it. `pipeline/circulation/aggregate.py` is what they feed, and its
-`CirculationStats` is the only thing they may hand onwards - a sampler that
-returns `SampledPost` to a caller has broken the guarantee D054 makes with
+Finish M4. The Reddit sampler is the remaining piece, and Reddit needs
+credentials, so check what is actually available before designing around it.
+`pipeline/circulation/bluesky.py` is the model to follow: pure parsers, an
+injected transport, and a `Sample` that reports how the run ended rather than
+just what it collected. `pipeline/circulation/aggregate.py` is what both feed,
+and its `CirculationStats` is the only thing they may hand onwards - a sampler
+that returns `SampledPost` to a caller has broken the guarantee D054 makes with
 types.
+
+Read D058 before writing it. The Bluesky work found three things against the
+live API that no fixture would have shown, and the useful one for Reddit is
+that an unauthenticated sample is capped at 100 posts by the API, not by any
+setting. Whatever Reddit's equivalent limit turns out to be, the sampler has to
+report it rather than let a truncated sample pass for a complete one.
 
 `pipeline/registry/schedule.py` is pure: it takes observations the caller has
 already produced and appends them. Nothing in the project runs it on a cadence

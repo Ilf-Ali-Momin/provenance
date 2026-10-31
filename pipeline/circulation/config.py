@@ -41,3 +41,31 @@ class CirculationSettings(BaseSettings):
     # Cap on a sample. Clustering is quadratic in the sample size, so this is
     # where that cost is bounded rather than in the loop.
     max_posts: int = Field(default=500, gt=0)
+
+
+class BlueskySettings(BaseSettings):
+    """Limits on one sampling run against the public AppView.
+
+    No credential appears here because none is needed: `public.api.bsky.app`
+    serves search and profiles unauthenticated. These are courtesy and cost
+    limits on someone else's service, not thresholds that change a result, so
+    unlike `CirculationSettings` none of them needs sweeping.
+    """
+
+    model_config = SettingsConfigDict(env_prefix="BLUESKY_", frozen=True)
+
+    # Results per request. 100 is the maximum the search method accepts.
+    page_size: int = Field(default=100, ge=1, le=100)
+
+    # Hard stop on paging. A cursor that keeps returning results would
+    # otherwise walk an upstream this project does not control, for as long as
+    # that upstream cared to answer.
+    max_pages: int = Field(default=10, ge=1)
+
+    # Posts kept from a run. Lower than or equal to the clustering cap in
+    # `CirculationSettings.max_posts`, so a sample is not fetched and then
+    # silently trimmed somewhere else.
+    max_posts: int = Field(default=500, gt=0)
+
+    # Accounts per profile request. 25 is the maximum the method accepts.
+    profile_batch: int = Field(default=25, ge=1, le=25)
